@@ -449,7 +449,7 @@ public class ParticleDecoGameTests {
 
 		try {
 			Files.writeString(dir.resolve("config.json"), "{ this is not json");
-			Files.writeString(dir.resolve("materials.json"), "{\"materials\": [{\"items\": [\"minecraft:not_an_item\"], \"particle\": \"minecraft:flame\"}]}");
+			Files.writeString(dir.resolve("materials.json"), "{\"defaultsVersion\": 2, \"materials\": [{\"items\": [\"minecraft:not_an_item\"], \"particle\": \"minecraft:flame\"}]}");
 			ConfigManager.Result result = ConfigManager.load(dir);
 			helper.assertTrue(!result.warnings().isEmpty(), "broken files produce warnings");
 			helper.assertValueEqual(result.config().viewDistance, defaults.viewDistance, "broken config uses defaults");
