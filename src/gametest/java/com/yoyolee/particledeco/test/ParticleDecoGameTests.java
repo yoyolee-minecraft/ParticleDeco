@@ -394,6 +394,47 @@ public class ParticleDecoGameTests {
 	}
 
 	@GameTest
+	public void waitingOutlineExpires(GameTestHelper helper) {
+		ServerPlayer player = survivalPlayer(helper);
+		Vec3 standAt = helper.absoluteVec(new Vec3(1.5, 1, 3.5));
+		player.teleportTo(standAt.x, standAt.y, standAt.z);
+		BlockPos waiting = new BlockPos(1, 1, 1);
+		helper.setBlock(waiting, Blocks.OAK_PLANKS);
+		use(helper, player, waiting, CoreItem.create(1));
+		BlockPos abs = helper.absolutePos(waiting);
+
+		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, abs), "fresh waiting block outlined");
+
+		int seconds = ParticleDeco.config().outlineWaitingShowSeconds;
+		long expired = helper.getLevel().getServer().getTickCount() - seconds * 20L - 1;
+		ParticleDeco.outlines().markWaitingAt(helper.getLevel(), abs, expired);
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertFalse(ParticleDeco.outlines().isShown(player, abs), "waiting outline gone after " + seconds + " s");
+
+		player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BRUSH));
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, abs), "expired waiting block still outlined with a tool");
+
+		// Brushing a playing block back to waiting starts a new window.
+		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+		use(helper, player, waiting, new ItemStack(Items.TORCH));
+		use(helper, player, waiting, new ItemStack(Items.BRUSH));
+		helper.assertTrue(emitter(helper, waiting) != null && emitter(helper, waiting).isWaiting(), "brushed back to waiting");
+		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, abs), "brushed block outlined again");
+
+		List<String> warnings = new ArrayList<>();
+		ModConfig legacy = ModConfig.parse(JsonParser.parseString("{\"outline\": {\"alwaysShowWaiting\": false}}").getAsJsonObject(), warnings::add);
+		helper.assertValueEqual(legacy.outlineWaitingShowSeconds, 0, "old alwaysShowWaiting false means only with a tool");
+		ModConfig oldDefault = ModConfig.parse(JsonParser.parseString("{\"outline\": {\"alwaysShowWaiting\": true}}").getAsJsonObject(), warnings::add);
+		helper.assertValueEqual(oldDefault.outlineWaitingShowSeconds, 60, "old default file gets the new timeout");
+		helper.succeed();
+	}
+
+	@GameTest
 	public void packetBudgetDefersOverflow(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer player = survivalPlayer(helper);

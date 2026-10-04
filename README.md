@@ -48,7 +48,7 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
   "brushDurabilityCost": 0,
   "consumeMaterial": true,
   "bindBlacklist": ["minecraft:suspicious_sand", "minecraft:suspicious_gravel"],
-  "outline": { "waitingColor": "#FFD54A", "playingColor": "#4AD9FF", "showDistance": 16, "alwaysShowWaiting": true },
+  "outline": { "waitingColor": "#FFD54A", "playingColor": "#4AD9FF", "showDistance": 16, "waitingShowSeconds": 60 },
   "viewDistance": 32,
   "limits": { "perChunk": 32, "maxCountPerEmit": 8, "globalPacketsPerTick": 400, "perPlayerPacketsPerTick": 60 },
   "language": "zh_tw"
@@ -56,7 +56,7 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
 ```
 
 - `recipeMode`: 設為 `true` 時停用鐵砧轉換，改用合成配方（紫水晶碎片 + 螢石粉 + 紅石粉，無序合成）。配方以資料包條件載入，修改後需要執行原版 `/reload`。
-- `outline.alwaysShowWaiting`: 預設 `true`，等待填入的方塊一律顯示黃色框線（規格書的設計，方便找到還沒填材料的方塊）。設為 `false` 時，黃色框線也只在手持核心或刷子時顯示。
+- `outline.waitingShowSeconds`：預設 `60`。方塊剛進入等待填入（剛綁定，或被刷子刷回等待）後，這段秒數內不拿工具也會顯示黃色框線，時間到就只在手持核心或刷子時顯示。設為 `0` 代表一律只在手持工具時顯示，`-1` 代表永遠顯示。伺服器重開後計時不保留，等待中的方塊只在手持工具時顯示。舊設定檔的 `alwaysShowWaiting: false` 會當成 `0`。
 - `language`: `zh_tw` 或 `en_us`。所有訊息由伺服器直接送出文字，客戶端不需要語言檔。
 
 `materials.json` 是材料對照表，每筆可以用 `items` 列出物品 ID 或 `#標籤`，`particle` 指定原版粒子。需要參數的粒子（例如 `geyser_base`）可加上 `options`，內容與原版粒子指令的參數相同：

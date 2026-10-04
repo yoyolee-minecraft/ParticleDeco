@@ -23,7 +23,8 @@ public final class ModConfig {
 	public int outlineWaitingColor = 0xFFD54A;
 	public int outlinePlayingColor = 0x4AD9FF;
 	public int outlineShowDistance = 16;
-	public boolean outlineAlwaysShowWaiting = true;
+	/** Seconds a waiting emitter stays outlined without a tool after it starts waiting; -1 forever, 0 never. */
+	public int outlineWaitingShowSeconds = 60;
 	public int viewDistance = 32;
 	public int perChunk = 32;
 	public int maxCountPerEmit = 8;
@@ -64,7 +65,12 @@ public final class ModConfig {
 		c.outlineWaitingColor = color(outline, "outline.waitingColor", "waitingColor", c.outlineWaitingColor, warn);
 		c.outlinePlayingColor = color(outline, "outline.playingColor", "playingColor", c.outlinePlayingColor, warn);
 		c.outlineShowDistance = integer(outline, "outline.showDistance", "showDistance", c.outlineShowDistance, 1, 64, warn);
-		c.outlineAlwaysShowWaiting = bool(outline, "outline.alwaysShowWaiting", "alwaysShowWaiting", c.outlineAlwaysShowWaiting, warn);
+		// Older files only have alwaysShowWaiting; false there still means "only with a tool".
+		if (!outline.has("waitingShowSeconds") && !bool(outline, "outline.alwaysShowWaiting", "alwaysShowWaiting", true, warn)) {
+			c.outlineWaitingShowSeconds = 0;
+		}
+
+		c.outlineWaitingShowSeconds = integer(outline, "outline.waitingShowSeconds", "waitingShowSeconds", c.outlineWaitingShowSeconds, -1, 86400, warn);
 		c.viewDistance = integer(root, "viewDistance", "viewDistance", c.viewDistance, 1, 128, warn);
 
 		JsonObject limits = object(root, "limits", warn);
@@ -100,7 +106,7 @@ public final class ModConfig {
 		outline.addProperty("waitingColor", String.format("#%06X", outlineWaitingColor));
 		outline.addProperty("playingColor", String.format("#%06X", outlinePlayingColor));
 		outline.addProperty("showDistance", outlineShowDistance);
-		outline.addProperty("alwaysShowWaiting", outlineAlwaysShowWaiting);
+		outline.addProperty("waitingShowSeconds", outlineWaitingShowSeconds);
 		root.add("outline", outline);
 		root.addProperty("viewDistance", viewDistance);
 		JsonObject limits = new JsonObject();
