@@ -153,7 +153,8 @@ public final class PdecoCommand {
 		source.sendSuccess(() -> Messages.text("stats.line1", ParticleDeco.manager().loadedEmitterCount(), ParticleDeco.manager().activeChunkCount()), false);
 		source.sendSuccess(() -> Messages.text("stats.line2", stats.lastTickPackets(), String.format(Locale.ROOT, "%.1f", stats.averagePacketsPerTick()), stats.totalPackets()), false);
 		source.sendSuccess(() -> Messages.text("stats.line3", stats.lastDeferred(), ParticleDeco.scheduler().pendingDeferred(), stats.totalDeferred(), stats.totalDropped()), false);
-		source.sendSuccess(() -> Messages.text("stats.line4", String.format(Locale.ROOT, "%.3f", stats.averageMillisPerTick())), false);
+		source.sendSuccess(() -> Messages.text("stats.line4", String.format(Locale.ROOT, "%.3f", stats.averageMillisPerTick()),
+				String.format(Locale.ROOT, "%.3f", stats.averageSendMillisPerTick())), false);
 		return ParticleDeco.manager().loadedEmitterCount();
 	}
 }

@@ -37,7 +37,7 @@ public final class Messages {
 		put("stats.line1", "已載入發射點 %s 個，分布於 %s 個區塊", "%s loaded emitters in %s chunks");
 		put("stats.line2", "封包：上一 tick %s，近 20 tick 平均 %s / tick，累計 %s", "Packets: last tick %s, average %s / tick over 20 ticks, total %s");
 		put("stats.line3", "延後：上一 tick %s，等待中 %s，累計 %s，丟棄 %s", "Deferred: last tick %s, pending %s, total %s, dropped %s");
-		put("stats.line4", "耗時：平均 %s ms / tick", "Time: %s ms / tick on average");
+		put("stats.line4", "耗時：平均 %s ms / tick（其中交給連線送出 %s ms）", "Time: %s ms / tick on average (%s ms handing packets to connections)");
 		put("gui.title", "粒子設定", "Particle settings");
 		put("gui.waiting", "等待填入材料", "Waiting for material");
 		put("gui.material", "材料：%s", "Material: %s");

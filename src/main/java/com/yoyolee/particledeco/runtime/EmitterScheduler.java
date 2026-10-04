@@ -45,6 +45,7 @@ public final class EmitterScheduler {
 	private final Set<Deferred> deferredSet = new LinkedHashSet<>();
 	private int tickPackets;
 	private int tickDeferred;
+	private long tickSendNanos;
 
 	public EmitterScheduler(EmitterManager manager) {
 		this.manager = manager;
@@ -69,6 +70,7 @@ public final class EmitterScheduler {
 		budget.reset(config.globalPacketsPerTick, config.perPlayerPacketsPerTick);
 		tickPackets = 0;
 		tickDeferred = 0;
+		tickSendNanos = 0;
 		long tick = server.getTickCount();
 		PlayerToggles toggles = PlayerToggles.get(server);
 
@@ -85,7 +87,7 @@ public final class EmitterScheduler {
 			});
 		}
 
-		stats.record(tickPackets, System.nanoTime() - start, tickDeferred);
+		stats.record(tickPackets, System.nanoTime() - start, tickSendNanos, tickDeferred);
 	}
 
 	/**
@@ -167,9 +169,13 @@ public final class EmitterScheduler {
 			if (packets == null) packets = buildPackets(emitter, options, origin, Math.min(emitter.count(), config.maxCountPerEmit));
 
 			if (budget.tryConsume(player.getUUID(), packets.size())) {
+				long sendStart = System.nanoTime();
+
 				for (ClientboundLevelParticlesPacket packet : packets) {
 					player.connection.send(packet);
 				}
+
+				tickSendNanos += System.nanoTime() - sendStart;
 
 				tickPackets += packets.size();
 			} else {
