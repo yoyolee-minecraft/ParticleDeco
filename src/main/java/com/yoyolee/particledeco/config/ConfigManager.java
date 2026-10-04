@@ -45,6 +45,17 @@ public final class ConfigManager {
 		// The material table reads the blacklist and other settings through ParticleDeco.config(), so install first.
 		ParticleDeco.setConfig(config);
 		JsonObject materialsJson = readOrCreate(dir.resolve("materials.json"), MaterialTable.defaults(), warnings);
+		List<String> added = MaterialTable.upgrade(materialsJson);
+
+		if (!added.isEmpty()) {
+			try {
+				Files.writeString(dir.resolve("materials.json"), GSON.toJson(materialsJson), StandardCharsets.UTF_8);
+				ParticleDeco.LOGGER.info("Added new default materials to materials.json: {}", added);
+			} catch (IOException e) {
+				warnings.add("Could not update materials.json with new defaults: " + e.getMessage());
+			}
+		}
+
 		MaterialTable materials = MaterialTable.parse(materialsJson, w -> warnings.add("materials.json: " + w));
 
 		if (materials.size() == 0) {

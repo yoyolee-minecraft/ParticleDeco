@@ -760,4 +760,48 @@ public class ParticleDecoGameTests {
 	private static void click(com.yoyolee.particledeco.gui.EditorGui gui, int slot) {
 		gui.getGuiElement(slot).getGuiCallback().click(slot, eu.pb4.sgui.api.ClickType.MOUSE_LEFT, null, gui);
 	}
+
+	@GameTest
+	public void version2MaterialsAndUpgrade(GameTestHelper helper) {
+		MaterialTable table = MaterialTable.parse(MaterialTable.defaults(), w -> { });
+		helper.assertValueEqual(particle(table, new ItemStack(Items.BREEZE_ROD)), "gust_emitter_small", "breeze rod");
+		helper.assertValueEqual(particle(table, new ItemStack(Items.SLIME_BALL)), "item_slime", "slime ball");
+		helper.assertValueEqual(particle(table, new ItemStack(Items.STONE_AXE)), "crit", "stone axe");
+		helper.assertValueEqual(particle(table, new ItemStack(Items.LAPIS_LAZULI)), "enchanted_hit", "lapis");
+		helper.assertValueEqual(particle(table, new ItemStack(Items.STONE_SWORD)), "damage_indicator", "stone sword");
+		helper.assertValueEqual(particle(table, new ItemStack(item("white_wool"))), "cloud", "white wool");
+		helper.assertValueEqual(particle(table, new ItemStack(Items.BAMBOO)), "sneeze", "bamboo");
+		helper.assertValueEqual(particle(table, new ItemStack(Items.GLASS_BOTTLE)), "witch", "glass bottle");
+
+		ItemStack water = new ItemStack(Items.POTION);
+		water.set(DataComponents.POTION_CONTENTS, new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.WATER));
+		helper.assertValueEqual(particle(table, water), "falling_water", "water bottle");
+		ItemStack healing = new ItemStack(Items.POTION);
+		healing.set(DataComponents.POTION_CONTENTS, new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.HEALING));
+		helper.assertValueEqual(particle(table, healing), "entity_effect", "other potions keep the effect swirl");
+		ItemStack waterSplash = new ItemStack(Items.SPLASH_POTION);
+		waterSplash.set(DataComponents.POTION_CONTENTS, new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.WATER));
+		helper.assertValueEqual(particle(table, waterSplash), "entity_effect", "only the drinkable water bottle is mapped to dripping water");
+
+		// A file written by 1.0.x has no defaultsVersion; the new defaults are appended once, user mappings are kept.
+		JsonObject old = JsonParser.parseString("""
+				{"materials": [
+				 {"items": ["minecraft:torch"], "particle": "minecraft:flame"},
+				 {"items": ["minecraft:stone_axe"], "particle": "minecraft:smoke"}
+				]}
+				""").getAsJsonObject();
+		List<String> added = MaterialTable.upgrade(old);
+		helper.assertTrue(added.contains("minecraft:breeze_rod") && added.contains("minecraft:potion[potion=minecraft:water]"), "new defaults added: " + added);
+		helper.assertFalse(added.contains("minecraft:stone_axe"), "an item the user already mapped is not overwritten");
+		MaterialTable upgraded = MaterialTable.parse(old, w -> { });
+		helper.assertValueEqual(particle(upgraded, new ItemStack(Items.STONE_AXE)), "smoke", "user mapping kept");
+		helper.assertValueEqual(particle(upgraded, new ItemStack(Items.BAMBOO)), "sneeze", "new default available");
+		helper.assertTrue(MaterialTable.upgrade(old).isEmpty(), "upgrade runs only once");
+		helper.succeed();
+	}
+
+	private static String particle(MaterialTable table, ItemStack stack) {
+		MaterialTable.Entry entry = table.find(stack);
+		return entry == null ? "none" : entry.particleId().getPath();
+	}
 }

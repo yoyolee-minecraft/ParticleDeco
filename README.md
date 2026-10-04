@@ -66,6 +66,10 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
   "options": { "water_blocks": 3, "burst_impulse_base": 0.5 } }
 ```
 
+`potion` 可以限定藥水種類，例如水瓶是 `minecraft:potion` 加上 `"potion": "minecraft:water"`。有 potion 條件的項目優先於同一物品的一般項目。
+
+改版新增預設材料時，已存在的 materials.json 會在啟動時自動補上新項目一次（依 `defaultsVersion` 判斷），你已經設定過的物品不會被覆蓋。
+
 `motion` 可以指定粒子的固定速度（每 tick 的格數，x y z），例如 `"motion": [0, 0.07, 0]` 會讓粒子像營火煙一樣往上飄。營火炊煙與狼煙在沒有寫 `motion` 時自動使用原版營火的 0.07 上升速度；寫 `[0, 0, 0]` 可以關掉。有速度的粒子每顆需要一個封包，會多用一些封包預算。
 
 `pattern` 讓粒子照原版的隨機節奏出現，取代發射點固定的間隔與數量：每 tick 有 `chance` 的機率觸發，每次出現 `min` 到 `max` 顆，水平落在 ±`horizontal` 格內，垂直落在 0 到 `vertical` 格（兩個亂數相加，越中間越多）。營火炊煙與狼煙預設使用原版營火的規則：

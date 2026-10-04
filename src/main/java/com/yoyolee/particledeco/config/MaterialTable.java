@@ -20,6 +20,8 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.phys.Vec3;
 
 import com.yoyolee.particledeco.runtime.ParticleResolver;
@@ -39,21 +41,41 @@ public final class MaterialTable {
 
 	private final Map<Item, Entry> byItem;
 	private final List<Map.Entry<TagKey<Item>, Entry>> byTag;
+	private final List<PotionMatch> byPotion;
 	private final List<Entry> entries;
 
-	private MaterialTable(Map<Item, Entry> byItem, List<Map.Entry<TagKey<Item>, Entry>> byTag, List<Entry> entries) {
+	/**
+	 * An entry that only matches one potion type of an item, e.g. a water bottle is minecraft:potion with potion=water.
+	 */
+	private record PotionMatch(Item item, Identifier potion, Entry entry) {
+	}
+
+	private MaterialTable(Map<Item, Entry> byItem, List<Map.Entry<TagKey<Item>, Entry>> byTag, List<PotionMatch> byPotion, List<Entry> entries) {
+		this.byPotion = byPotion;
 		this.byItem = byItem;
 		this.byTag = byTag;
 		this.entries = entries;
 	}
 
 	public static MaterialTable empty() {
-		return new MaterialTable(Map.of(), List.of(), List.of());
+		return new MaterialTable(Map.of(), List.of(), List.of(), List.of());
 	}
 
 	@Nullable
 	public Entry find(ItemStack stack) {
 		if (stack.isEmpty()) return null;
+
+		if (!byPotion.isEmpty()) {
+			PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+			Identifier potion = contents == null ? null
+					: contents.potion().map(holder -> BuiltInRegistries.POTION.getKey(holder.value())).orElse(null);
+
+			if (potion != null) {
+				for (PotionMatch match : byPotion) {
+					if (match.item() == stack.getItem() && match.potion().equals(potion)) return match.entry();
+				}
+			}
+		}
 
 		Entry entry = byItem.get(stack.getItem());
 
@@ -79,6 +101,7 @@ public final class MaterialTable {
 	public static MaterialTable parse(JsonObject root, Consumer<String> warn) {
 		Map<Item, Entry> byItem = new IdentityHashMap<>();
 		List<Map.Entry<TagKey<Item>, Entry>> byTag = new ArrayList<>();
+		List<PotionMatch> byPotion = new ArrayList<>();
 		List<Entry> entries = new ArrayList<>();
 		JsonElement list = root.get("materials");
 
@@ -145,6 +168,17 @@ public final class MaterialTable {
 				}
 			}
 
+			Identifier potionCondition = null;
+
+			if (obj.has("potion")) {
+				potionCondition = obj.get("potion").isJsonPrimitive() ? Identifier.tryParse(obj.get("potion").getAsString()) : null;
+
+				if (potionCondition == null || !BuiltInRegistries.POTION.containsKey(potionCondition)) {
+					warn.accept("materials[" + index + "]: unknown potion " + obj.get("potion") + ", skipped");
+					continue;
+				}
+			}
+
 			boolean any = false;
 
 			for (String itemId : itemIds) {
@@ -176,6 +210,14 @@ public final class MaterialTable {
 					continue;
 				}
 
+				if (potionCondition != null) {
+					Entry entry = new Entry(particleId, type, rarity, options, motion, pattern, itemId + "[potion=" + potionCondition + "]");
+					byPotion.add(new PotionMatch(item, potionCondition, entry));
+					entries.add(entry);
+					any = true;
+					continue;
+				}
+
 				if (byItem.containsKey(item)) {
 					warn.accept("materials[" + index + "]: item " + itemId + " is already mapped, later entry ignored");
 					continue;
@@ -192,7 +234,7 @@ public final class MaterialTable {
 			}
 		}
 
-		return new MaterialTable(byItem, Collections.unmodifiableList(byTag), Collections.unmodifiableList(entries));
+		return new MaterialTable(byItem, Collections.unmodifiableList(byTag), Collections.unmodifiableList(byPotion), Collections.unmodifiableList(entries));
 	}
 
 	@Nullable
@@ -287,9 +329,82 @@ public final class MaterialTable {
 		JsonObject plume = new JsonObject();
 		plume.addProperty("water_blocks", 3);
 		addWithOptions(list, "rare", "minecraft:geyser_plume", plume, "minecraft:potent_sulfur");
+		addedInVersion2(list);
 		JsonObject root = new JsonObject();
+		root.addProperty("defaultsVersion", DEFAULTS_VERSION);
 		root.add("materials", list);
 		return root;
+	}
+
+	/**
+	 * Bumped whenever new default entries are added, so existing config files can receive them once.
+	 */
+	public static final int DEFAULTS_VERSION = 2;
+
+	private static void addedInVersion2(JsonArray list) {
+		add(list, "medium", "minecraft:gust_emitter_small", "minecraft:breeze_rod");
+		add(list, "common", "minecraft:item_slime", "minecraft:slime_ball");
+		add(list, "common", "minecraft:crit", "minecraft:stone_axe");
+		add(list, "common", "minecraft:enchanted_hit", "minecraft:lapis_lazuli");
+		add(list, "common", "minecraft:damage_indicator", "minecraft:stone_sword");
+		add(list, "common", "minecraft:falling_water", "minecraft:potion");
+		list.get(list.size() - 1).getAsJsonObject().addProperty("potion", "minecraft:water");
+		add(list, "common", "minecraft:cloud", "minecraft:white_wool");
+		add(list, "common", "minecraft:sneeze", "minecraft:bamboo");
+		add(list, "common", "minecraft:witch", "minecraft:glass_bottle");
+	}
+
+	/**
+	 * Adds default entries introduced after the file was written. Runs once per version bump; entries whose items the
+	 * file already maps (with the same potion condition) are not added, so user choices are kept.
+	 *
+	 * @return the names of the added items, empty when nothing changed
+	 */
+	public static List<String> upgrade(JsonObject root) {
+		int version = root.has("defaultsVersion") && root.get("defaultsVersion").isJsonPrimitive() ? root.get("defaultsVersion").getAsInt() : 1;
+		List<String> added = new ArrayList<>();
+
+		if (version >= DEFAULTS_VERSION || !root.has("materials") || !root.get("materials").isJsonArray()) return added;
+
+		JsonArray existing = root.getAsJsonArray("materials");
+		java.util.Set<String> mapped = new java.util.HashSet<>();
+
+		for (JsonElement el : existing) {
+			if (!el.isJsonObject()) continue;
+
+			mapped.addAll(keys(el.getAsJsonObject()));
+		}
+
+		JsonArray fresh = new JsonArray();
+
+		if (version < 2) addedInVersion2(fresh);
+
+		for (JsonElement el : fresh) {
+			List<String> keys = keys(el.getAsJsonObject());
+
+			if (keys.stream().noneMatch(mapped::contains)) {
+				existing.add(el);
+				added.addAll(keys);
+			}
+		}
+
+		root.addProperty("defaultsVersion", DEFAULTS_VERSION);
+		return added;
+	}
+
+	private static List<String> keys(JsonObject entry) {
+		List<String> keys = new ArrayList<>();
+		String potion = entry.has("potion") && entry.get("potion").isJsonPrimitive() ? "[potion=" + entry.get("potion").getAsString() + "]" : "";
+
+		if (entry.has("item") && entry.get("item").isJsonPrimitive()) keys.add(entry.get("item").getAsString() + potion);
+
+		if (entry.has("items") && entry.get("items").isJsonArray()) {
+			for (JsonElement item : entry.getAsJsonArray("items")) {
+				if (item.isJsonPrimitive()) keys.add(item.getAsString() + potion);
+			}
+		}
+
+		return keys;
 	}
 
 	private static JsonObject geyserBase() {
