@@ -92,7 +92,7 @@ public final class EditorGui extends SimpleGui {
 		if (e == null) return;
 
 		for (int i = 0; i < 27; i++) {
-			setSlot(i, new GuiElementBuilder(Items.GRAY_STAINED_GLASS_PANE).setName(Component.empty()).hideTooltip().build());
+			setSlot(i, new GuiElementBuilder(item("gray_stained_glass_pane")).setName(Component.empty()).hideTooltip().build());
 		}
 
 		int maxCount = ParticleDeco.config().maxCountPerEmit;
@@ -125,11 +125,11 @@ public final class EditorGui extends SimpleGui {
 				.setCallback((index, type, action, gui) -> clickDye(type))
 				.build());
 
-		setSlot(SLOT_OFFSET_X, button(Items.RED_CONCRETE, Messages.text("gui.offset", "X", e.offsetX()), "gui.hint.adjust",
+		setSlot(SLOT_OFFSET_X, button(item("red_concrete"), Messages.text("gui.offset", "X", e.offsetX()), "gui.hint.adjust",
 				(type) -> apply(x -> x.withOffset(x.offsetX() + sign(type) * (type.shift ? 4 : 1), x.offsetY(), x.offsetZ()))));
-		setSlot(SLOT_OFFSET_Y, button(Items.LIME_CONCRETE, Messages.text("gui.offset", "Y", e.offsetY()), "gui.hint.adjust",
+		setSlot(SLOT_OFFSET_Y, button(item("lime_concrete"), Messages.text("gui.offset", "Y", e.offsetY()), "gui.hint.adjust",
 				(type) -> apply(x -> x.withOffset(x.offsetX(), x.offsetY() + sign(type) * (type.shift ? 4 : 1), x.offsetZ()))));
-		setSlot(SLOT_OFFSET_Z, button(Items.BLUE_CONCRETE, Messages.text("gui.offset", "Z", e.offsetZ()), "gui.hint.adjust",
+		setSlot(SLOT_OFFSET_Z, button(item("blue_concrete"), Messages.text("gui.offset", "Z", e.offsetZ()), "gui.hint.adjust",
 				(type) -> apply(x -> x.withOffset(x.offsetX(), x.offsetY(), x.offsetZ() + sign(type) * (type.shift ? 4 : 1)))));
 		setSlot(SLOT_RESET_OFFSET, new GuiElementBuilder(Items.WATER_BUCKET)
 				.setName(Messages.text("gui.reset_offset"))
@@ -176,10 +176,15 @@ public final class EditorGui extends SimpleGui {
 	}
 
 	private static Item dyeItem(DyeColor color) {
-		if (color == null) return Items.WHITE_DYE;
+		return item((color == null ? "white" : color.getName()) + "_dye");
+	}
 
-		Item item = BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace(color.getName() + "_dye"));
-		return item == Items.AIR ? Items.WHITE_DYE : item;
+	/**
+	 * Colored items are color collections in 26.x, so look them up by id.
+	 */
+	private static Item item(String path) {
+		Item item = BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace(path));
+		return item == Items.AIR ? Items.PAPER : item;
 	}
 
 	private interface Click {

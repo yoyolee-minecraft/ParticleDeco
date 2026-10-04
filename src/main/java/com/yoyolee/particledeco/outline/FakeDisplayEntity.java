@@ -7,12 +7,14 @@ import java.util.UUID;
 import org.joml.Vector3f;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Brightness;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -39,6 +41,8 @@ public final class FakeDisplayEntity {
 		MARKER
 	}
 
+	private static final EntityType<?> BLOCK_DISPLAY = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.withDefaultNamespace("block_display"));
+	private static final EntityType<?> ITEM_DISPLAY = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.withDefaultNamespace("item_display"));
 	private static final float SCALE = 1.002f;
 	private static final float OFFSET = (SCALE - 1.0f) / 2.0f;
 
@@ -114,7 +118,7 @@ public final class FakeDisplayEntity {
 
 		if (kind == Kind.MARKER) return packets;
 
-		EntityType<?> type = kind == Kind.BLOCK ? EntityType.BLOCK_DISPLAY : EntityType.ITEM_DISPLAY;
+		EntityType<?> type = kind == Kind.BLOCK ? BLOCK_DISPLAY : ITEM_DISPLAY;
 		Vec3 at = kind == Kind.BLOCK ? Vec3.atLowerCornerOf(pos) : Vec3.atCenterOf(pos);
 		packets.add(new ClientboundAddEntityPacket(id, uuid, at.x, at.y, at.z, 0.0f, 0.0f, type, 0, Vec3.ZERO, 0.0));
 		packets.add(dataPacket());

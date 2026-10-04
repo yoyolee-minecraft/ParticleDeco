@@ -88,6 +88,22 @@ public final class EmitterScheduler {
 		stats.record(tickPackets, System.nanoTime() - start, tickDeferred);
 	}
 
+	/**
+	 * Plays one emitter immediately against the current budget, outside of its regular schedule.
+	 * Used by /pdeco and the GameTests.
+	 */
+	public void emitNow(ServerLevel level, Emitter emitter, List<ServerPlayer> players) {
+		process(level, emitter, players, PlayerToggles.get(level.getServer()), null);
+	}
+
+	/**
+	 * Starts a fresh budget with the current config limits.
+	 */
+	public void resetBudget() {
+		ModConfig config = ParticleDeco.config();
+		budget.reset(config.globalPacketsPerTick, config.perPlayerPacketsPerTick);
+	}
+
 	private void processDeferred(MinecraftServer server, PlayerToggles toggles) {
 		if (deferred.isEmpty()) return;
 
