@@ -737,8 +737,9 @@ public class ParticleDecoGameTests {
 		String sizeName = gui.getGuiElement(com.yoyolee.particledeco.gui.EditorGui.SLOT_SIZE).getItemStack().getHoverName().getString();
 		helper.assertValueEqual(sizeName, com.yoyolee.particledeco.util.Messages.raw("gui.size.unused"), "point shape says size is not used");
 
+		Emitter before = emitter(helper, rel);
 		click(gui, com.yoyolee.particledeco.gui.EditorGui.SLOT_SIZE);
-		helper.assertValueEqual(emitter(helper, rel).shapeSize(), 0.0f, "clicking the inactive size does nothing");
+		helper.assertValueEqual(emitter(helper, rel).shapeSize(), before.shapeSize(), "clicking the inactive size does nothing");
 
 		click(gui, com.yoyolee.particledeco.gui.EditorGui.SLOT_SHAPE);
 		helper.assertValueEqual(emitter(helper, rel).shape(), EmitterShape.COLUMN, "left click on shape goes to column");
