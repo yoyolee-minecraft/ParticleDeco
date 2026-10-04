@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 import com.yoyolee.particledeco.ParticleDeco;
 import com.yoyolee.particledeco.config.MaterialTable;
@@ -30,6 +31,20 @@ public final class ParticleResolver {
 	private static final int DEFAULT_POTION_COLOR = 0xFF385DC6;
 
 	private ParticleResolver() {
+	}
+
+	/**
+	 * Built-in velocity for particles that vanilla always spawns moving. Campfire smoke only rises because the campfire
+	 * gives it an upward velocity of 0.07; without it the smoke hangs in place. Entries in materials.json can override
+	 * this with "motion", so existing config files get the fix without editing.
+	 */
+	@Nullable
+	public static Vec3 defaultMotion(ParticleType<?> type) {
+		if (type == ParticleTypes.CAMPFIRE_COSY_SMOKE || type == ParticleTypes.CAMPFIRE_SIGNAL_SMOKE) {
+			return new Vec3(0.0, 0.07, 0.0);
+		}
+
+		return null;
 	}
 
 	public static boolean isSupported(ParticleType<?> type, @Nullable JsonObject options) {

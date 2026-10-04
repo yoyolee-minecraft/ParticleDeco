@@ -532,4 +532,111 @@ public class ParticleDecoGameTests {
 			helper.succeed();
 		});
 	}
+
+	/**
+	 * Replays the outline packets the way a client would apply them, following the reported sequence:
+	 * hold a brush, right click a waiting (yellow) block with it, switch to an empty slot, then the same with a core.
+	 */
+	@GameTest(maxTicks = 100)
+	public void clientOutlinesClearWhenToolIsPutAway(GameTestHelper helper) {
+		ServerPlayer player = survivalPlayer(helper);
+		Vec3 standAt = helper.absoluteVec(new Vec3(1.5, 1, 3.5));
+		player.teleportTo(standAt.x, standAt.y, standAt.z);
+		BlockPos waiting = new BlockPos(0, 1, 1);
+		BlockPos playing = new BlockPos(2, 1, 1);
+		BlockPos waitingAbs = helper.absolutePos(waiting);
+		BlockPos playingAbs = helper.absolutePos(playing);
+		java.util.Map<Integer, BlockPos> client = new java.util.concurrent.ConcurrentHashMap<>();
+		com.yoyolee.particledeco.outline.OutlineTracker.setTap((target, packet) -> {
+			if (target != player) return;
+
+			if (packet instanceof net.minecraft.network.protocol.game.ClientboundAddEntityPacket add) {
+				client.put(add.getId(), BlockPos.containing(add.getX(), add.getY(), add.getZ()));
+			} else if (packet instanceof net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket remove) {
+				remove.getEntityIds().forEach(id -> client.remove(id));
+			}
+		});
+
+		helper.setBlock(waiting, Blocks.OAK_PLANKS);
+		helper.setBlock(playing, Blocks.OAK_PLANKS);
+		use(helper, player, waiting, CoreItem.create(1));
+		use(helper, player, playing, CoreItem.create(1));
+		use(helper, player, playing, new ItemStack(Items.TORCH));
+
+		var inventory = player.getInventory();
+		inventory.setItem(0, ItemStack.EMPTY);
+		inventory.setItem(1, new ItemStack(Items.BRUSH));
+		inventory.setItem(2, CoreItem.create(1));
+		inventory.setSelectedSlot(0);
+
+		helper.runAfterDelay(3, () -> {
+			helper.assertTrue(client.containsValue(waitingAbs), "waiting outline visible with empty hand");
+			helper.assertFalse(client.containsValue(playingAbs), "playing outline hidden with empty hand");
+			inventory.setSelectedSlot(1);
+		});
+		helper.runAfterDelay(6, () -> {
+			helper.assertTrue(client.containsValue(playingAbs), "playing outline visible with brush");
+			// Right click the yellow outline (the waiting block) with the brush.
+			BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(waitingAbs), Direction.UP, waitingAbs, false);
+			player.gameMode.useItemOn(player, helper.getLevel(), inventory.getSelectedItem(), InteractionHand.MAIN_HAND, hit);
+		});
+		helper.runAfterDelay(12, () -> {
+			// Switch to the empty slot, the way the client does it (stops using the brush first).
+			player.stopUsingItem();
+			inventory.setSelectedSlot(0);
+		});
+		helper.runAfterDelay(15, () -> {
+			helper.assertFalse(client.containsValue(playingAbs), "playing outline must be removed after putting the brush away, client has " + client);
+			helper.assertTrue(client.containsValue(waitingAbs), "waiting outline stays");
+			inventory.setSelectedSlot(2);
+		});
+		helper.runAfterDelay(18, () -> {
+			helper.assertTrue(client.containsValue(playingAbs), "playing outline visible with core");
+			inventory.setSelectedSlot(0);
+		});
+		helper.runAfterDelay(21, () -> {
+			helper.assertFalse(client.containsValue(playingAbs), "playing outline removed after putting the core away, client has " + client);
+			helper.assertValueEqual(client.size(), 1, "only the waiting outline remains on the client");
+			com.yoyolee.particledeco.outline.OutlineTracker.setTap(null);
+			helper.succeed();
+		});
+	}
+
+	@GameTest
+	public void plantOutlineFollowsModelOffset(GameTestHelper helper) {
+		floor(helper);
+		BlockPos rel = new BlockPos(1, 1, 1);
+		helper.setBlock(rel.below(), Blocks.GRASS_BLOCK);
+		helper.setBlock(rel, Blocks.SHORT_GRASS);
+		BlockPos abs = helper.absolutePos(rel);
+		BlockState state = helper.getBlockState(rel);
+		Vec3 offset = state.getOffset(abs);
+		FakeDisplayEntity display = new FakeDisplayEntity(abs, state, 0xFFFFFF);
+		org.joml.Vector3f translation = display.translation(0.0f);
+		helper.assertTrue(Math.abs(translation.x - offset.x) < 1e-6 && Math.abs(translation.z - offset.z) < 1e-6,
+				"translation " + translation + " should include model offset " + offset);
+		helper.succeed();
+	}
+
+	@GameTest
+	public void campfireSmokeRises(GameTestHelper helper) {
+		MaterialTable table = MaterialTable.parse(MaterialTable.defaults(), w -> { });
+		MaterialTable.Entry cosy = table.find(new ItemStack(Items.CAMPFIRE));
+		MaterialTable.Entry signal = table.find(new ItemStack(Items.HAY_BLOCK));
+		helper.assertTrue(cosy.motion() != null && cosy.motion().y > 0, "cosy smoke has upward motion");
+		helper.assertTrue(signal.motion() != null && signal.motion().y > 0, "signal smoke has upward motion");
+		helper.assertTrue(table.find(new ItemStack(Items.TORCH)).motion() == null, "flame stays stationary");
+
+		Emitter emitter = Emitter.waiting(helper.absolutePos(new BlockPos(1, 1, 1)), Blocks.OAK_PLANKS).withCount(3);
+		var packets = ParticleDeco.scheduler().buildPackets(emitter, net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE,
+				Vec3.ZERO, 3, cosy.motion());
+		helper.assertValueEqual(packets.size(), 3, "one packet per particle");
+
+		for (var packet : packets) {
+			helper.assertValueEqual(packet.getCount(), 0, "count 0 so the client uses the velocity");
+			helper.assertTrue(Math.abs(packet.getYDist() * packet.getMaxSpeed() - 0.07f) < 1e-6, "upward velocity 0.07");
+		}
+
+		helper.succeed();
+	}
 }

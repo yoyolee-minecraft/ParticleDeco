@@ -11,6 +11,7 @@ import java.util.UUID;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import org.jspecify.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -47,6 +48,27 @@ public final class OutlineTracker {
 	}
 
 	private final Map<UUID, View> views = new HashMap<>();
+
+	/**
+	 * Observes every outline packet sent to a player. Used by the GameTests to replay the client's view.
+	 */
+	public interface PacketTap {
+		void sent(ServerPlayer player, Packet<?> packet);
+	}
+
+	@Nullable
+	private static volatile PacketTap tap;
+
+	public static void setTap(@Nullable PacketTap newTap) {
+		tap = newTap;
+	}
+
+	private static void sendPacket(ServerPlayer player, Packet<?> packet) {
+		player.connection.send(packet);
+		PacketTap current = tap;
+
+		if (current != null) current.sent(player, packet);
+	}
 
 	public static boolean isTool(ItemStack stack) {
 		return CoreItem.isCore(stack) || stack.getItem() == Items.BRUSH;
@@ -93,7 +115,7 @@ public final class OutlineTracker {
 		if (view != null && !view.shown.isEmpty()) {
 			IntArrayList ids = new IntArrayList();
 			view.shown.values().forEach(e -> ids.add(e.id()));
-			player.connection.send(new ClientboundRemoveEntitiesPacket(ids));
+			sendPacket(player, new ClientboundRemoveEntitiesPacket(ids));
 		}
 	}
 
@@ -125,7 +147,7 @@ public final class OutlineTracker {
 		Long2ObjectMap<Emitter> desired = new Long2ObjectOpenHashMap<>();
 
 		for (Emitter emitter : nearby) {
-			if (emitter.isWaiting() || view.holdingTool) {
+			if (view.holdingTool || (emitter.isWaiting() && config.outlineAlwaysShowWaiting)) {
 				desired.put(emitter.pos().asLong(), emitter);
 			}
 		}
@@ -143,7 +165,7 @@ public final class OutlineTracker {
 		}
 
 		if (!removed.isEmpty()) {
-			player.connection.send(new ClientboundRemoveEntitiesPacket(removed));
+			sendPacket(player, new ClientboundRemoveEntitiesPacket(removed));
 		}
 
 		for (Emitter emitter : desired.values()) {
@@ -157,13 +179,13 @@ public final class OutlineTracker {
 				send(player, created.spawnPackets());
 			} else if (existing.state() != state || existing.color() != color) {
 				if (existing.update(state, color)) {
-					player.connection.send(new ClientboundRemoveEntitiesPacket(existing.id()));
+					sendPacket(player, new ClientboundRemoveEntitiesPacket(existing.id()));
 					FakeDisplayEntity created = new FakeDisplayEntity(emitter.pos(), state, color);
 					view.shown.put(emitter.pos().asLong(), created);
 					send(player, created.spawnPackets());
 				} else if (existing.kind() != FakeDisplayEntity.Kind.MARKER) {
 					// Block state changed (door opened, fence connected...): resend so the outline shape follows.
-					player.connection.send(existing.dataPacket());
+					sendPacket(player, existing.dataPacket());
 				}
 			}
 
@@ -177,7 +199,7 @@ public final class OutlineTracker {
 
 	private static void send(ServerPlayer player, List<Packet<? super ClientGamePacketListener>> packets) {
 		for (Packet<? super ClientGamePacketListener> packet : packets) {
-			player.connection.send(packet);
+			sendPacket(player, packet);
 		}
 	}
 
@@ -188,7 +210,7 @@ public final class OutlineTracker {
 			double x = pos.getX() + ((i & 1) == 0 ? 0.0 : 1.0);
 			double y = pos.getY() + ((i & 2) == 0 ? 0.0 : 1.0);
 			double z = pos.getZ() + ((i & 4) == 0 ? 0.0 : 1.0);
-			player.connection.send(new ClientboundLevelParticlesPacket(dust, false, false, x, y, z, 0.0f, 0.0f, 0.0f, 0.0f, 1));
+			sendPacket(player, new ClientboundLevelParticlesPacket(dust, false, false, x, y, z, 0.0f, 0.0f, 0.0f, 0.0f, 1));
 		}
 	}
 }

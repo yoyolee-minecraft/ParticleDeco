@@ -20,6 +20,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.Vec3;
 
 import com.yoyolee.particledeco.runtime.ParticleResolver;
 
@@ -27,7 +28,11 @@ import com.yoyolee.particledeco.runtime.ParticleResolver;
  * Maps vanilla items to the particle they produce, loaded from config/particledeco/materials.json.
  */
 public final class MaterialTable {
-	public record Entry(Identifier particleId, ParticleType<?> type, String rarity, @Nullable JsonObject options, String source) {
+	/**
+	 * @param motion fixed particle velocity in blocks per tick, or null for stationary particles. Particles with motion
+	 *               are sent one per packet with count 0, which makes the client use the velocity exactly.
+	 */
+	public record Entry(Identifier particleId, ParticleType<?> type, String rarity, @Nullable JsonObject options, @Nullable Vec3 motion, String source) {
 	}
 
 	private final Map<Item, Entry> byItem;
@@ -101,6 +106,17 @@ public final class MaterialTable {
 
 			ParticleType<?> type = BuiltInRegistries.PARTICLE_TYPE.getValue(particleId);
 			JsonObject options = obj.has("options") && obj.get("options").isJsonObject() ? obj.getAsJsonObject("options") : null;
+			Vec3 motion = ParticleResolver.defaultMotion(type);
+
+			if (obj.has("motion")) {
+				Vec3 parsed = parseMotion(obj.get("motion"));
+
+				if (parsed == null) {
+					warn.accept("materials[" + index + "]: motion must be an array of three numbers, using default");
+				} else {
+					motion = parsed.lengthSqr() == 0 ? null : parsed;
+				}
+			}
 
 			if (!ParticleResolver.isSupported(type, options)) {
 				warn.accept("materials[" + index + "]: particle " + particleId + " needs an \"options\" object, skipped");
@@ -131,7 +147,7 @@ public final class MaterialTable {
 						continue;
 					}
 
-					Entry entry = new Entry(particleId, type, rarity, options, itemId);
+					Entry entry = new Entry(particleId, type, rarity, options, motion, itemId);
 					byTag.add(Map.entry(TagKey.create(Registries.ITEM, tagId), entry));
 					entries.add(entry);
 					any = true;
@@ -156,7 +172,7 @@ public final class MaterialTable {
 					continue;
 				}
 
-				Entry entry = new Entry(particleId, type, rarity, options, itemId);
+				Entry entry = new Entry(particleId, type, rarity, options, motion, itemId);
 				byItem.put(item, entry);
 				entries.add(entry);
 				any = true;
@@ -168,6 +184,27 @@ public final class MaterialTable {
 		}
 
 		return new MaterialTable(byItem, Collections.unmodifiableList(byTag), Collections.unmodifiableList(entries));
+	}
+
+	@Nullable
+	private static Vec3 parseMotion(JsonElement el) {
+		if (!el.isJsonArray()) return null;
+
+		JsonArray arr = el.getAsJsonArray();
+
+		if (arr.size() != 3) return null;
+
+		double[] v = new double[3];
+
+		for (int i = 0; i < 3; i++) {
+			JsonElement e = arr.get(i);
+
+			if (!e.isJsonPrimitive() || !e.getAsJsonPrimitive().isNumber()) return null;
+
+			v[i] = Math.max(-1.0, Math.min(1.0, e.getAsDouble()));
+		}
+
+		return new Vec3(v[0], v[1], v[2]);
 	}
 
 	/**

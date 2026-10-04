@@ -23,6 +23,7 @@ public final class ModConfig {
 	public int outlineWaitingColor = 0xFFD54A;
 	public int outlinePlayingColor = 0x4AD9FF;
 	public int outlineShowDistance = 16;
+	public boolean outlineAlwaysShowWaiting = true;
 	public int viewDistance = 32;
 	public int perChunk = 32;
 	public int maxCountPerEmit = 8;
@@ -63,6 +64,7 @@ public final class ModConfig {
 		c.outlineWaitingColor = color(outline, "outline.waitingColor", "waitingColor", c.outlineWaitingColor, warn);
 		c.outlinePlayingColor = color(outline, "outline.playingColor", "playingColor", c.outlinePlayingColor, warn);
 		c.outlineShowDistance = integer(outline, "outline.showDistance", "showDistance", c.outlineShowDistance, 1, 64, warn);
+		c.outlineAlwaysShowWaiting = bool(outline, "outline.alwaysShowWaiting", "alwaysShowWaiting", c.outlineAlwaysShowWaiting, warn);
 		c.viewDistance = integer(root, "viewDistance", "viewDistance", c.viewDistance, 1, 128, warn);
 
 		JsonObject limits = object(root, "limits", warn);
@@ -98,6 +100,7 @@ public final class ModConfig {
 		outline.addProperty("waitingColor", String.format("#%06X", outlineWaitingColor));
 		outline.addProperty("playingColor", String.format("#%06X", outlinePlayingColor));
 		outline.addProperty("showDistance", outlineShowDistance);
+		outline.addProperty("alwaysShowWaiting", outlineAlwaysShowWaiting);
 		root.add("outline", outline);
 		root.addProperty("viewDistance", viewDistance);
 		JsonObject limits = new JsonObject();

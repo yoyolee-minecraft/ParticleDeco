@@ -133,14 +133,24 @@ public final class FakeDisplayEntity {
 		values.add(SynchedEntityData.DataValue.create(DisplayAccessor.particledeco$getBrightness(), Brightness.FULL_BRIGHT.pack()));
 
 		if (kind == Kind.BLOCK) {
-			values.add(SynchedEntityData.DataValue.create(DisplayAccessor.particledeco$getTranslation(), new Vector3f(-OFFSET, -OFFSET, -OFFSET)));
+			values.add(SynchedEntityData.DataValue.create(DisplayAccessor.particledeco$getTranslation(), translation(-OFFSET)));
 			values.add(SynchedEntityData.DataValue.create(BlockDisplayAccessor.particledeco$getBlockState(), state));
 		} else if (kind == Kind.ITEM) {
+			values.add(SynchedEntityData.DataValue.create(DisplayAccessor.particledeco$getTranslation(), translation(0.0f)));
 			values.add(SynchedEntityData.DataValue.create(ItemDisplayAccessor.particledeco$getItemStack(), new ItemStack(state.getBlock().asItem())));
 			values.add(SynchedEntityData.DataValue.create(ItemDisplayAccessor.particledeco$getItemDisplay(), ItemDisplayContext.NONE.getId()));
 		}
 
 		return new ClientboundSetEntityDataPacket(id, values);
+	}
+
+	/**
+	 * Plants such as flowers, grass and bamboo are drawn with a random per-position model offset. A display entity
+	 * renders the block without that offset, so it is added to the translation to keep the outline on the plant.
+	 */
+	public Vector3f translation(float base) {
+		Vec3 offset = state.getOffset(pos);
+		return new Vector3f(base + (float) offset.x, base + (float) offset.y, base + (float) offset.z);
 	}
 
 	public static ClientboundRemoveEntitiesPacket removePacket(int... ids) {

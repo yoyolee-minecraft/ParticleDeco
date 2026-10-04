@@ -134,14 +134,11 @@ public final class EmitterScheduler {
 	 */
 	private void process(ServerLevel level, Emitter emitter, List<ServerPlayer> players, PlayerToggles toggles, @Nullable UUID onlyPlayer) {
 		BlockPos pos = emitter.pos();
+		BlockState state = level.getBlockState(pos);
 
-		if (onlyPlayer == null) {
-			BlockState state = level.getBlockState(pos);
-
-			if (!BlockValidator.stillBound(state, emitter.block())) {
-				EmitterActions.unbindAndDropAt(level, pos);
-				return;
-			}
+		if (onlyPlayer == null && !BlockValidator.stillBound(state, emitter.block())) {
+			EmitterActions.unbindAndDropAt(level, pos);
+			return;
 		}
 
 		if (emitter.isWaiting()) return;
@@ -157,7 +154,7 @@ public final class EmitterScheduler {
 		if (options == null) return;
 
 		ModConfig config = ParticleDeco.config();
-		Vec3 origin = origin(emitter);
+		Vec3 origin = origin(emitter).add(state.getOffset(pos));
 		double maxDistSq = (double) config.viewDistance * config.viewDistance;
 		List<ClientboundLevelParticlesPacket> packets = null;
 
@@ -166,7 +163,7 @@ public final class EmitterScheduler {
 
 			if (player.position().distanceToSqr(origin) > maxDistSq) continue;
 
-			if (packets == null) packets = buildPackets(emitter, options, origin, Math.min(emitter.count(), config.maxCountPerEmit));
+			if (packets == null) packets = buildPackets(emitter, options, origin, Math.min(emitter.count(), config.maxCountPerEmit), entry.motion());
 
 			if (budget.tryConsume(player.getUUID(), packets.size())) {
 				long sendStart = System.nanoTime();
@@ -207,18 +204,29 @@ public final class EmitterScheduler {
 
 	/**
 	 * Server-side shape sampling. Each returned packet counts once against the budget per receiving player.
+	 *
+	 * @param motion fixed velocity, or null. With motion every particle needs its own packet (count 0) so the client
+	 *               applies the velocity exactly; the spread is then applied here instead of by the client.
 	 */
-	public List<ClientboundLevelParticlesPacket> buildPackets(Emitter emitter, ParticleOptions options, Vec3 origin, int count) {
+	public List<ClientboundLevelParticlesPacket> buildPackets(Emitter emitter, ParticleOptions options, Vec3 origin, int count, @Nullable Vec3 motion) {
 		List<ClientboundLevelParticlesPacket> packets = new ArrayList<>();
 		float spread = emitter.spread();
 		float size = emitter.shapeSize();
 
 		switch (emitter.shape()) {
-			case POINT -> packets.add(packet(options, origin.x, origin.y, origin.z, spread, count));
+			case POINT -> {
+				if (motion == null) {
+					packets.add(packet(options, origin.x, origin.y, origin.z, spread, count, null));
+				} else {
+					for (int i = 0; i < count; i++) {
+						packets.add(packet(options, origin.x, origin.y, origin.z, spread, 1, motion));
+					}
+				}
+			}
 			case COLUMN -> {
 				for (int i = 0; i < count; i++) {
 					double y = count == 1 ? 0 : size * i / (count - 1);
-					packets.add(packet(options, origin.x, origin.y + y, origin.z, spread, 1));
+					packets.add(packet(options, origin.x, origin.y + y, origin.z, spread, 1, motion));
 				}
 			}
 			case RING -> {
@@ -226,7 +234,7 @@ public final class EmitterScheduler {
 
 				for (int i = 0; i < count; i++) {
 					double angle = phase + (Math.PI * 2) * i / count;
-					packets.add(packet(options, origin.x + Math.cos(angle) * size, origin.y, origin.z + Math.sin(angle) * size, spread, 1));
+					packets.add(packet(options, origin.x + Math.cos(angle) * size, origin.y, origin.z + Math.sin(angle) * size, spread, 1, motion));
 				}
 			}
 			case AREA -> {
@@ -235,7 +243,7 @@ public final class EmitterScheduler {
 				for (int i = 0; i < count; i++) {
 					double x = origin.x + (random.nextDouble() * 2 - 1) * half;
 					double z = origin.z + (random.nextDouble() * 2 - 1) * half;
-					packets.add(packet(options, x, origin.y, z, spread, 1));
+					packets.add(packet(options, x, origin.y, z, spread, 1, motion));
 				}
 			}
 		}
@@ -243,7 +251,15 @@ public final class EmitterScheduler {
 		return packets;
 	}
 
-	private static ClientboundLevelParticlesPacket packet(ParticleOptions options, double x, double y, double z, float spread, int count) {
-		return new ClientboundLevelParticlesPacket(options, false, false, x, y, z, spread, spread, spread, 0.0f, count);
+	private ClientboundLevelParticlesPacket packet(ParticleOptions options, double x, double y, double z, float spread, int count, @Nullable Vec3 motion) {
+		if (motion == null) {
+			return new ClientboundLevelParticlesPacket(options, false, false, x, y, z, spread, spread, spread, 0.0f, count);
+		}
+
+		// count 0: the client spawns exactly one particle and uses (dx, dy, dz) * speed as its velocity.
+		double jx = x + (random.nextDouble() * 2 - 1) * spread;
+		double jy = y + (random.nextDouble() * 2 - 1) * spread;
+		double jz = z + (random.nextDouble() * 2 - 1) * spread;
+		return new ClientboundLevelParticlesPacket(options, false, false, jx, jy, jz, (float) motion.x, (float) motion.y, (float) motion.z, 1.0f, 0);
 	}
 }
