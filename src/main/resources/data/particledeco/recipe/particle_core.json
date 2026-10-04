@@ -1,0 +1,25 @@
+{
+	"fabric:load_conditions": [
+		{
+			"condition": "particledeco:recipe_mode"
+		}
+	],
+	"type": "minecraft:crafting_shapeless",
+	"category": "misc",
+	"ingredients": [
+		"minecraft:amethyst_shard",
+		"minecraft:glowstone_dust",
+		"minecraft:redstone"
+	],
+	"result": {
+		"id": "minecraft:amethyst_shard",
+		"count": 1,
+		"components": {
+			"minecraft:custom_data": {
+				"particledeco_core": 1
+			},
+			"minecraft:enchantment_glint_override": true,
+			"minecraft:custom_name": "粒子核心"
+		}
+	}
+}
