@@ -490,7 +490,9 @@ public class ParticleDecoGameTests {
 	 * server thread. On a real server send only queues the packet and the network thread encodes it, so the
 	 * assertion uses the scheduler time without the send calls. Both numbers are logged.
 	 */
-	@GameTest(maxTicks = 200)
+	// Own environment so it runs in a separate batch: its 500 emitters would otherwise fill the per-chunk limit of
+	// neighbouring tests that happen to share a chunk, and their activity would skew the timing.
+	@GameTest(maxTicks = 200, environment = "particledeco-gametest:isolated")
 	public void fiveHundredEmittersStayUnderOneMillisecond(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		List<BlockPos> placed = new ArrayList<>();
