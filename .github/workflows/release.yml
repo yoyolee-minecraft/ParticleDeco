@@ -2,6 +2,11 @@ name: release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to create for this release, e.g. v1.0.0"
+        required: true
 
 permissions:
   contents: write
@@ -27,7 +32,9 @@ jobs:
           sha256sum dist/*.jar > dist/SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
-          name: Particle Deco ${{ github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: Particle Deco ${{ inputs.tag || github.ref_name }}
           body_path: docs/RELEASE_NOTES.md
           files: |
             dist/*.jar
