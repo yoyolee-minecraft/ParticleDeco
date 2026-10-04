@@ -570,7 +570,11 @@ public class ParticleDecoGameTests {
 		inventory.setSelectedSlot(0);
 
 		helper.runAfterDelay(3, () -> {
-			helper.assertTrue(client.containsValue(waitingAbs), "waiting outline visible with empty hand");
+			helper.assertTrue(client.containsValue(waitingAbs), "waiting outline visible with empty hand; client=" + client
+					+ " waitingAbs=" + waitingAbs + " shown=" + ParticleDeco.outlines().isShown(player, waitingAbs)
+					+ " emitter=" + ParticleDeco.manager().get(helper.getLevel(), waitingAbs)
+					+ " player=" + player.blockPosition() + " near=" + ParticleDeco.manager().near(helper.getLevel(), player.blockPosition(), 16).size()
+					+ " inPlayerList=" + helper.getLevel().getServer().getPlayerList().getPlayers().contains(player));
 			helper.assertFalse(client.containsValue(playingAbs), "playing outline hidden with empty hand");
 			inventory.setSelectedSlot(1);
 		});
