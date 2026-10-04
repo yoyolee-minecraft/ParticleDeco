@@ -84,7 +84,7 @@ public final class UseBlockHandler {
 
 		EmitterActions.bind(level, pos);
 
-		if (!player.isCreative()) {
+		if (!isCreative(player)) {
 			stack.shrink(1);
 		}
 
@@ -108,7 +108,7 @@ public final class UseBlockHandler {
 
 		int cost = ParticleDeco.config().brushDurabilityCost;
 
-		if (cost > 0 && !player.isCreative()) {
+		if (cost > 0 && !isCreative(player)) {
 			stack.hurtAndBreak(cost, player, hand);
 		}
 
@@ -121,7 +121,7 @@ public final class UseBlockHandler {
 	private static InteractionResult fill(ServerPlayer player, ServerLevel level, ItemStack stack, Emitter emitter, MaterialTable.Entry entry) {
 		EmitterActions.fill(level, emitter, stack, entry);
 
-		if (!player.isCreative() && ParticleDeco.config().consumeMaterial) {
+		if (!isCreative(player) && ParticleDeco.config().consumeMaterial) {
 			stack.shrink(1);
 		}
 
@@ -138,6 +138,14 @@ public final class UseBlockHandler {
 		net.minecraft.world.entity.item.ItemEntity item = new net.minecraft.world.entity.item.ItemEntity(level, at.x, at.y, at.z, stack.copy());
 		item.setDefaultPickUpDelay();
 		level.addFreshEntity(item);
+	}
+
+	/**
+	 * Server-authoritative game mode. Same as {@link ServerPlayer#isCreative()} in normal play, but does not depend on
+	 * {@code Player#gameMode()}, which test mock players override.
+	 */
+	public static boolean isCreative(ServerPlayer player) {
+		return player.gameMode.isCreative();
 	}
 
 	/**

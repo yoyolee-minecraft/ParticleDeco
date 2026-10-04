@@ -233,7 +233,7 @@ public final class MaterialTable {
 		add(list, "rare", "minecraft:end_rod", "minecraft:end_rod");
 		add(list, "rare", "minecraft:reverse_portal", "minecraft:respawn_anchor");
 		add(list, "rare", "minecraft:vault_connection", "minecraft:trial_key");
-		add(list, "rare", "minecraft:trial_spawner_detected_player_ominous", "minecraft:ominous_trial_key");
+		add(list, "rare", "minecraft:trial_spawner_detection_ominous", "minecraft:ominous_trial_key");
 		add(list, "rare", "minecraft:ominous_spawning", "minecraft:ominous_bottle");
 		add(list, "rare", "minecraft:sculk_soul", "minecraft:sculk_catalyst");
 		add(list, "rare", "minecraft:dragon_breath", "minecraft:dragon_breath");

@@ -193,7 +193,29 @@ public class ParticleDecoGameTests {
 		use(helper, player, pos, new ItemStack(Items.CAMPFIRE));
 		helper.assertTrue(player.containerMenu == player.inventoryMenu, "chest must not open while filling");
 		helper.assertTrue(!emitter(helper, pos).isWaiting(), "chest emitter playing");
-		helper.assertValueEqual(FakeDisplayEntity.kindFor(helper.getBlockState(pos)), FakeDisplayEntity.Kind.ITEM, "chest uses item_display outline");
+		helper.succeed();
+	}
+
+	@GameTest
+	public void outlineKindFollowsRenderShape(GameTestHelper helper) {
+		// Spec rule: RenderShape MODEL -> block_display; otherwise item_display, or corner particles without an item.
+		int checked = 0;
+
+		for (net.minecraft.world.level.block.Block block : net.minecraft.core.registries.BuiltInRegistries.BLOCK) {
+			BlockState state = block.defaultBlockState();
+			FakeDisplayEntity.Kind kind = FakeDisplayEntity.kindFor(state);
+
+			if (state.getRenderShape() == net.minecraft.world.level.block.RenderShape.MODEL) {
+				helper.assertValueEqual(kind, FakeDisplayEntity.Kind.BLOCK, "model block " + block);
+			} else if (block.asItem() != Items.AIR) {
+				helper.assertValueEqual(kind, FakeDisplayEntity.Kind.ITEM, "non-model block with item " + block);
+				checked++;
+			} else {
+				helper.assertValueEqual(kind, FakeDisplayEntity.Kind.MARKER, "non-model block without item " + block);
+			}
+		}
+
+		helper.assertTrue(checked > 0, "at least one block uses the item_display fallback");
 		helper.succeed();
 	}
 
