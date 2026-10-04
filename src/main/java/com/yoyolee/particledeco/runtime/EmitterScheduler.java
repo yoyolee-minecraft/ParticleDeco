@@ -160,7 +160,7 @@ public final class EmitterScheduler {
 		List<ClientboundLevelParticlesPacket> packets = null;
 
 		for (ServerPlayer player : players) {
-			if (onlyPlayer == null && toggles.isDisabled(player.getUUID())) continue;
+			if (toggles.isDisabled(player.getUUID())) continue;
 
 			if (player.position().distanceToSqr(origin) > maxDistSq) continue;
 

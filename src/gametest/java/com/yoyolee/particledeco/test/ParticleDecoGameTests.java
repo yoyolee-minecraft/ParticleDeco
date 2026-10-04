@@ -483,4 +483,48 @@ public class ParticleDecoGameTests {
 		helper.assertTrue(emitter(helper, new BlockPos(1, 1, 1)) == null, "pdeco remove unbinds");
 		helper.succeed();
 	}
+
+	/**
+	 * Acceptance check from the spec: 500 emitters with 5 players nearby should add less than 1 ms per tick.
+	 * Measures only the scheduler's own time (the part this mod adds to MSPT).
+	 */
+	@GameTest(maxTicks = 200)
+	public void fiveHundredEmittersStayUnderOneMillisecond(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		List<BlockPos> placed = new ArrayList<>();
+
+		for (int y = 0; y < 8 && placed.size() < 500; y++) {
+			for (int x = 0; x < 8 && placed.size() < 500; x++) {
+				for (int z = 0; z < 8 && placed.size() < 500; z++) {
+					BlockPos rel = new BlockPos(x, y, z);
+					helper.setBlock(rel, Blocks.OAK_PLANKS);
+					BlockPos abs = helper.absolutePos(rel);
+					ParticleDeco.manager().put(level, Emitter.waiting(abs, Blocks.OAK_PLANKS).withMaterial(new ItemStack(Items.TORCH), ParticleDeco.id("flame")));
+					placed.add(abs);
+				}
+			}
+		}
+
+		helper.assertValueEqual(placed.size(), 500, "emitters placed");
+		Vec3 center = helper.absoluteVec(new Vec3(4, 9, 4));
+
+		for (int i = 0; i < 5; i++) {
+			ServerPlayer player = helper.makeMockServerPlayerInLevel();
+			player.teleportTo(center.x, center.y, center.z);
+		}
+
+		helper.runAfterDelay(60, () -> {
+			double ms = ParticleDeco.scheduler().stats().averageMillisPerTick();
+			double packets = ParticleDeco.scheduler().stats().averagePacketsPerTick();
+			ParticleDeco.LOGGER.info("Benchmark: 500 emitters, 5 players: {} ms/tick, {} packets/tick", String.format("%.3f", ms), String.format("%.1f", packets));
+
+			for (BlockPos abs : placed) {
+				ParticleDeco.manager().remove(level, abs);
+			}
+
+			helper.assertTrue(packets > 0, "particles were sent");
+			helper.assertTrue(ms < 1.0, "scheduler took " + ms + " ms per tick");
+			helper.succeed();
+		});
+	}
 }
