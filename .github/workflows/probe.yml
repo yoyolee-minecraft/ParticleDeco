@@ -37,9 +37,10 @@ jobs:
           JARS=$(find ~/.gradle .gradle -name 'minecraft-*.jar' -not -name '*sources*' 2>/dev/null | sort)
           echo "$JARS"
           CP=$(echo "$JARS" | tr '\n' ':')
-          MC=$(ls -S $JARS | head -1)
+          MC=$(echo "$JARS" | grep 'minecraft-merged-deobf' | head -1)
+          [ -z "$MC" ] && MC=$(echo "$JARS" | grep merged | head -1)
           echo "Using $MC"
-          if [ -n "$LIST" ]; then echo "##### LIST"; unzip -Z1 "$MC" | grep -E "$LIST" | sed 's/\.class$//' ; fi
-          for c in $CLASSES; do echo "##### $c"; javap -p -cp "$CP" "$c" 2>&1; done
-          for c in $CONSTANTS; do echo "##### BYTECODE $c"; javap -p -c -constants -cp "$CP" "$c" 2>&1; done
+          if [ -n "$LIST" ]; then echo "##### LIST"; unzip -Z1 "$MC" | grep -E "$LIST" | grep -v '\$' | sed 's/\.class$//' || true; fi
+          for c in $CLASSES; do echo "##### $c"; javap -p -cp "$CP" "$c" 2>&1 | grep -v 'lambda\$' || true; done
+          for c in $CONSTANTS; do echo "##### BYTECODE $c"; javap -p -c -constants -cp "$CP" "$c" 2>&1 || true; done
           echo "##### END"
