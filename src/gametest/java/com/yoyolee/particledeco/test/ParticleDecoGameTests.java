@@ -719,4 +719,44 @@ public class ParticleDecoGameTests {
 		helper.assertTrue(warnings.size() == 1, "one warning for the invalid chance, got " + warnings);
 		helper.succeed();
 	}
+
+	/**
+	 * The size button only applies to column, ring and area. For the default point shape it must say so instead of
+	 * silently ignoring clicks.
+	 */
+	@GameTest
+	public void editorSizeButtonFollowsShape(GameTestHelper helper) {
+		ServerPlayer player = survivalPlayer(helper);
+		BlockPos rel = new BlockPos(1, 1, 1);
+		helper.setBlock(rel, Blocks.OAK_PLANKS);
+		BlockPos pos = helper.absolutePos(rel);
+		EmitterActions.bind(helper.getLevel(), pos);
+		ParticleDeco.manager().put(helper.getLevel(), emitter(helper, rel).withMaterial(new ItemStack(Items.TORCH), ParticleDeco.id("flame")));
+
+		com.yoyolee.particledeco.gui.EditorGui gui = new com.yoyolee.particledeco.gui.EditorGui(player, helper.getLevel(), pos);
+		String sizeName = gui.getGuiElement(com.yoyolee.particledeco.gui.EditorGui.SLOT_SIZE).getItemStack().getHoverName().getString();
+		helper.assertValueEqual(sizeName, com.yoyolee.particledeco.util.Messages.raw("gui.size.unused"), "point shape says size is not used");
+
+		click(gui, com.yoyolee.particledeco.gui.EditorGui.SLOT_SIZE);
+		helper.assertValueEqual(emitter(helper, rel).shapeSize(), 0.0f, "clicking the inactive size does nothing");
+
+		click(gui, com.yoyolee.particledeco.gui.EditorGui.SLOT_SHAPE);
+		helper.assertValueEqual(emitter(helper, rel).shape(), EmitterShape.COLUMN, "left click on shape goes to column");
+		helper.assertValueEqual(emitter(helper, rel).shapeSize(), 1.0f, "column starts at its minimum height");
+
+		click(gui, com.yoyolee.particledeco.gui.EditorGui.SLOT_SIZE);
+		helper.assertValueEqual(emitter(helper, rel).shapeSize(), 1.25f, "size adjusts for column");
+		String columnName = gui.getGuiElement(com.yoyolee.particledeco.gui.EditorGui.SLOT_SIZE).getItemStack().getHoverName().getString();
+		helper.assertTrue(columnName.contains("1.25"), "label shows the new height: " + columnName);
+
+		ParticleDeco.manager().put(helper.getLevel(), emitter(helper, rel).withMaterial(new ItemStack(Items.CAMPFIRE), ParticleDeco.id("campfire_cosy_smoke")));
+		com.yoyolee.particledeco.gui.EditorGui smoke = new com.yoyolee.particledeco.gui.EditorGui(player, helper.getLevel(), pos);
+		click(smoke, com.yoyolee.particledeco.gui.EditorGui.SLOT_INTERVAL);
+		helper.assertValueEqual(emitter(helper, rel).interval(), Emitter.DEFAULT_INTERVAL, "interval is inactive for the random campfire rhythm");
+		helper.succeed();
+	}
+
+	private static void click(com.yoyolee.particledeco.gui.EditorGui gui, int slot) {
+		gui.getGuiElement(slot).getGuiCallback().click(slot, eu.pb4.sgui.api.ClickType.MOUSE_LEFT, null, gui);
+	}
 }

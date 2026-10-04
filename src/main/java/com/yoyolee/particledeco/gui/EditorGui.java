@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +25,7 @@ import net.minecraft.world.item.Items;
 
 import com.yoyolee.particledeco.ParticleDeco;
 import com.yoyolee.particledeco.data.Emitter;
+import com.yoyolee.particledeco.data.EmitterShape;
 import com.yoyolee.particledeco.data.RedstoneMode;
 import com.yoyolee.particledeco.util.Messages;
 
@@ -109,14 +111,33 @@ public final class EditorGui extends SimpleGui {
 		info.addLoreLine(Component.literal(pos.getX() + " " + pos.getY() + " " + pos.getZ()).withStyle(ChatFormatting.DARK_GRAY));
 		setSlot(SLOT_INFO, info.build());
 
-		setSlot(SLOT_SHAPE, button(Items.PRISMARINE_SHARD, Messages.text("gui.shape", Messages.raw("shape." + e.shape().serializedName())), "gui.hint.cycle",
-				(type) -> apply(x -> x.withShape(type.isRight ? x.shape().previous() : x.shape().next()))));
-		setSlot(SLOT_SIZE, button(Items.SCAFFOLDING, Messages.text("gui.size", fmt(e.shapeSize())), "gui.hint.adjust",
-				(type) -> apply(x -> x.withShapeSize(x.shapeSize() + sign(type) * (type.shift ? 1.0f : 0.25f)))));
-		setSlot(SLOT_COUNT, button(Items.GLOWSTONE_DUST, Messages.text("gui.count", e.count()), "gui.hint.adjust",
-				(type) -> apply(x -> x.withCount(Mth.clamp(x.count() + sign(type) * (type.shift ? 4 : 1), 1, maxCount)))));
-		setSlot(SLOT_INTERVAL, button(Items.CLOCK, Messages.text("gui.interval", e.interval()), "gui.hint.adjust",
-				(type) -> apply(x -> x.withInterval(x.interval() + sign(type) * (type.shift ? 10 : 1)))));
+		boolean patterned = materialEntry != null && materialEntry.pattern() != null;
+
+		if (patterned) {
+			// Random vanilla rhythm decides timing, count and positions; these settings would have no effect.
+			setSlot(SLOT_SHAPE, inactive(Items.PRISMARINE_SHARD, Messages.text("gui.shape", Messages.raw("shape." + e.shape().serializedName())), "gui.unused.pattern"));
+			setSlot(SLOT_SIZE, inactive(Items.SCAFFOLDING, Messages.text("gui.size.unused"), "gui.unused.pattern"));
+			setSlot(SLOT_COUNT, inactive(Items.GLOWSTONE_DUST, Messages.text("gui.count", e.count()), "gui.unused.pattern"));
+			setSlot(SLOT_INTERVAL, inactive(Items.CLOCK, Messages.text("gui.interval", e.interval()), "gui.unused.pattern"));
+		} else {
+			setSlot(SLOT_SHAPE, button(Items.PRISMARINE_SHARD, Messages.text("gui.shape", Messages.raw("shape." + e.shape().serializedName())), "gui.hint.cycle",
+					(type) -> apply(x -> x.withShape(type.isRight ? x.shape().previous() : x.shape().next())),
+					"gui.shape.help.point", "gui.shape.help.column", "gui.shape.help.ring", "gui.shape.help.area"));
+
+			if (e.shape() == EmitterShape.POINT) {
+				setSlot(SLOT_SIZE, inactive(Items.SCAFFOLDING, Messages.text("gui.size.unused"), "gui.size.point"));
+			} else {
+				String sizeKey = "gui.size." + e.shape().serializedName();
+				setSlot(SLOT_SIZE, button(Items.SCAFFOLDING, Messages.text(sizeKey, fmt(e.shapeSize()), fmt(e.shape().minSize()), fmt(e.shape().maxSize())), "gui.hint.adjust",
+						(type) -> apply(x -> x.withShapeSize(x.shapeSize() + sign(type) * (type.shift ? 1.0f : 0.25f)))));
+			}
+
+			setSlot(SLOT_COUNT, button(Items.GLOWSTONE_DUST, Messages.text("gui.count", e.count()), "gui.hint.adjust",
+					(type) -> apply(x -> x.withCount(Mth.clamp(x.count() + sign(type) * (type.shift ? 4 : 1), 1, maxCount)))));
+			setSlot(SLOT_INTERVAL, button(Items.CLOCK, Messages.text("gui.interval", e.interval()), "gui.hint.adjust",
+					(type) -> apply(x -> x.withInterval(x.interval() + sign(type) * (type.shift ? 10 : 1)))));
+		}
+
 		setSlot(SLOT_SPREAD, button(Items.FEATHER, Messages.text("gui.spread", fmt(e.spread())), "gui.hint.adjust",
 				(type) -> apply(x -> x.withSpread(x.spread() + sign(type) * (type.shift ? 0.25f : 0.05f)))));
 		setSlot(SLOT_REDSTONE, button(Items.REDSTONE_TORCH, Messages.text("gui.redstone", Messages.raw("redstone." + e.redstoneMode().name().toLowerCase(Locale.ROOT))), "gui.hint.cycle",
@@ -196,13 +217,28 @@ public final class EditorGui extends SimpleGui {
 		void click(ClickType type);
 	}
 
-	private static eu.pb4.sgui.api.elements.GuiElement button(Item icon, Component name, String hintKey, Click click) {
-		return new GuiElementBuilder(icon)
-				.setName(name)
+	private static eu.pb4.sgui.api.elements.GuiElement button(Item icon, Component name, String hintKey, Click click, String... helpKeys) {
+		GuiElementBuilder builder = new GuiElementBuilder(icon).setName(name);
+
+		for (String helpKey : helpKeys) {
+			builder.addLoreLine(Messages.info(helpKey));
+		}
+
+		return builder
 				.addLoreLine(Messages.info(hintKey))
 				.setCallback((index, type, action, gui) -> {
 					if (type.isLeft || type.isRight) click.click(type);
 				})
+				.build();
+	}
+
+	/**
+	 * A setting that does not apply right now: greyed out, explains why, ignores clicks.
+	 */
+	private static eu.pb4.sgui.api.elements.GuiElement inactive(Item icon, MutableComponent name, String reasonKey) {
+		return new GuiElementBuilder(icon)
+				.setName(name.withStyle(ChatFormatting.DARK_GRAY))
+				.addLoreLine(Messages.info(reasonKey))
 				.build();
 	}
 

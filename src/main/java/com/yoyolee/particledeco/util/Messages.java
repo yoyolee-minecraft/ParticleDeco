@@ -43,7 +43,16 @@ public final class Messages {
 		put("gui.material", "材料：%s", "Material: %s");
 		put("gui.particle", "粒子：%s", "Particle: %s");
 		put("gui.shape", "形狀：%s", "Shape: %s");
-		put("gui.size", "大小：%s 格", "Size: %s blocks");
+		put("gui.size.column", "柱高：%s 格（%s 到 %s）", "Column height: %s blocks (%s to %s)");
+		put("gui.size.ring", "圓環半徑：%s 格（%s 到 %s）", "Ring radius: %s blocks (%s to %s)");
+		put("gui.size.area", "區域邊長：%s 格（%s 到 %s）", "Area side: %s blocks (%s to %s)");
+		put("gui.size.unused", "大小：目前不使用", "Size: not used");
+		put("gui.size.point", "單點形狀沒有大小，散開範圍請調「擴散」；切換成垂直柱、水平圓環或方形區域後才能調整", "The point shape has no size; use spread instead, or switch to column, ring or area");
+		put("gui.shape.help.point", "單點：從同一點冒出，用「擴散」控制散開範圍", "Point: one spot, scattered by spread");
+		put("gui.shape.help.column", "垂直柱：沿高度均勻排列，大小是柱高", "Column: evenly spaced upward, size is the height");
+		put("gui.shape.help.ring", "水平圓環：沿圓周排列，大小是半徑", "Ring: around a circle, size is the radius");
+		put("gui.shape.help.area", "方形區域：在正方形內隨機落點，大小是邊長", "Area: random spots in a square, size is the side");
+		put("gui.unused.pattern", "這個材料使用原版的隨機節奏，這項設定不會套用", "This material uses the random vanilla rhythm, so this setting is not used");
 		put("gui.count", "每次數量：%s", "Count per emit: %s");
 		put("gui.interval", "間隔：%s tick", "Interval: %s ticks");
 		put("gui.spread", "擴散：%s 格", "Spread: %s blocks");
