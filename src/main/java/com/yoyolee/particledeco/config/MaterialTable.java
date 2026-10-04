@@ -107,7 +107,7 @@ public final class MaterialTable {
 
 		if (list == null || !list.isJsonArray()) {
 			warn.accept("materials.json must contain a \"materials\" array");
-			return new MaterialTable(byItem, byTag, entries);
+			return new MaterialTable(byItem, byTag, byPotion, entries);
 		}
 
 		int index = 0;
