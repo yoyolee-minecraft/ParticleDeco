@@ -101,6 +101,11 @@ public final class EditorGui extends SimpleGui {
 				.setName(e.isWaiting() ? Messages.text("gui.waiting").withStyle(ChatFormatting.YELLOW)
 						: Messages.text("gui.material", e.material().getHoverName().getString()).withStyle(ChatFormatting.AQUA));
 		e.particle().ifPresent(id -> info.addLoreLine(Messages.info("gui.particle", id.toString())));
+		var materialEntry = e.isWaiting() ? null : ParticleDeco.materials().find(e.material());
+
+		if (materialEntry != null && materialEntry.pattern() != null) {
+			info.addLoreLine(Messages.info("gui.pattern"));
+		}
 		info.addLoreLine(Component.literal(pos.getX() + " " + pos.getY() + " " + pos.getZ()).withStyle(ChatFormatting.DARK_GRAY));
 		setSlot(SLOT_INFO, info.build());
 

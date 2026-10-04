@@ -25,6 +25,7 @@ import net.minecraft.world.phys.Vec3;
 import com.yoyolee.particledeco.ParticleDeco;
 import com.yoyolee.particledeco.config.MaterialTable;
 import com.yoyolee.particledeco.config.ModConfig;
+import com.yoyolee.particledeco.config.SpawnPattern;
 import com.yoyolee.particledeco.data.Emitter;
 
 /**
@@ -81,7 +82,7 @@ public final class EmitterScheduler {
 
 			List<ServerPlayer> players = level.players();
 			manager.forEachLoaded(level, emitter -> {
-				if (emitter.isDue(tick)) {
+				if (emitter.isDue(tick) || hasPattern(emitter)) {
 					process(level, emitter, players, toggles, null);
 				}
 			});
@@ -128,6 +129,16 @@ public final class EmitterScheduler {
 	}
 
 	/**
+	 * Emitters whose material uses a random spawn pattern are evaluated every tick instead of on their interval.
+	 */
+	private static boolean hasPattern(Emitter emitter) {
+		if (emitter.isWaiting()) return false;
+
+		MaterialTable.Entry entry = ParticleDeco.materials().find(emitter.material());
+		return entry != null && entry.pattern() != null;
+	}
+
+	/**
 	 * Validates and plays one emitter.
 	 *
 	 * @param onlyPlayer when not null this is a deferred replay for a single player, block validation is skipped
@@ -155,6 +166,17 @@ public final class EmitterScheduler {
 
 		ModConfig config = ParticleDeco.config();
 		Vec3 origin = origin(emitter).add(state.getOffset(pos));
+		SpawnPattern pattern = entry.pattern();
+		int patternCount = 0;
+
+		if (pattern != null) {
+			// A deferred replay re-sends without a new roll; otherwise roll vanilla's per-tick chance.
+			patternCount = onlyPlayer != null ? pattern.min() : pattern.roll(random);
+
+			if (patternCount == 0) return;
+
+			patternCount = Math.min(patternCount, config.maxCountPerEmit);
+		}
 		double maxDistSq = (double) config.viewDistance * config.viewDistance;
 		List<ClientboundLevelParticlesPacket> packets = null;
 
@@ -163,7 +185,11 @@ public final class EmitterScheduler {
 
 			if (player.position().distanceToSqr(origin) > maxDistSq) continue;
 
-			if (packets == null) packets = buildPackets(emitter, options, origin, Math.min(emitter.count(), config.maxCountPerEmit), entry.motion());
+			if (packets == null) {
+				packets = pattern != null
+						? buildPatternPackets(options, origin, pattern, patternCount, entry.motion())
+						: buildPackets(emitter, options, origin, Math.min(emitter.count(), config.maxCountPerEmit), entry.motion());
+			}
 
 			if (budget.tryConsume(player.getUUID(), packets.size())) {
 				long sendStart = System.nanoTime();
@@ -246,6 +272,20 @@ public final class EmitterScheduler {
 					packets.add(packet(options, x, origin.y, z, spread, 1, motion));
 				}
 			}
+		}
+
+		return packets;
+	}
+
+	/**
+	 * Packets for one hit of a random spawn pattern: each particle at its own sampled position.
+	 */
+	public List<ClientboundLevelParticlesPacket> buildPatternPackets(ParticleOptions options, Vec3 origin, SpawnPattern pattern, int count, @Nullable Vec3 motion) {
+		List<ClientboundLevelParticlesPacket> packets = new ArrayList<>(count);
+
+		for (int i = 0; i < count; i++) {
+			Vec3 at = pattern.sample(origin, random);
+			packets.add(packet(options, at.x, at.y, at.z, 0.0f, 1, motion));
 		}
 
 		return packets;

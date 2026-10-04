@@ -31,8 +31,10 @@ public final class MaterialTable {
 	/**
 	 * @param motion fixed particle velocity in blocks per tick, or null for stationary particles. Particles with motion
 	 *               are sent one per packet with count 0, which makes the client use the velocity exactly.
+	 * @param pattern random per-tick emission copied from vanilla, or null to use the emitter's fixed interval and count
 	 */
-	public record Entry(Identifier particleId, ParticleType<?> type, String rarity, @Nullable JsonObject options, @Nullable Vec3 motion, String source) {
+	public record Entry(Identifier particleId, ParticleType<?> type, String rarity, @Nullable JsonObject options, @Nullable Vec3 motion,
+			@Nullable SpawnPattern pattern, String source) {
 	}
 
 	private final Map<Item, Entry> byItem;
@@ -118,6 +120,13 @@ public final class MaterialTable {
 				}
 			}
 
+			final int entryIndex = index;
+			SpawnPattern pattern = ParticleResolver.defaultPattern(type);
+
+			if (obj.has("pattern")) {
+				pattern = SpawnPattern.parse(obj.get("pattern"), pattern, w -> warn.accept("materials[" + entryIndex + "]: " + w));
+			}
+
 			if (!ParticleResolver.isSupported(type, options)) {
 				warn.accept("materials[" + index + "]: particle " + particleId + " needs an \"options\" object, skipped");
 				continue;
@@ -147,7 +156,7 @@ public final class MaterialTable {
 						continue;
 					}
 
-					Entry entry = new Entry(particleId, type, rarity, options, motion, itemId);
+					Entry entry = new Entry(particleId, type, rarity, options, motion, pattern, itemId);
 					byTag.add(Map.entry(TagKey.create(Registries.ITEM, tagId), entry));
 					entries.add(entry);
 					any = true;
@@ -172,7 +181,7 @@ public final class MaterialTable {
 					continue;
 				}
 
-				Entry entry = new Entry(particleId, type, rarity, options, motion, itemId);
+				Entry entry = new Entry(particleId, type, rarity, options, motion, pattern, itemId);
 				byItem.put(item, entry);
 				entries.add(entry);
 				any = true;

@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.yoyolee.particledeco.ParticleDeco;
 import com.yoyolee.particledeco.config.MaterialTable;
+import com.yoyolee.particledeco.config.SpawnPattern;
 
 /**
  * Turns a material table entry plus the stored item into concrete vanilla particle options.
@@ -42,6 +43,19 @@ public final class ParticleResolver {
 	public static Vec3 defaultMotion(ParticleType<?> type) {
 		if (type == ParticleTypes.CAMPFIRE_COSY_SMOKE || type == ParticleTypes.CAMPFIRE_SIGNAL_SMOKE) {
 			return new Vec3(0.0, 0.07, 0.0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Built-in random emission for particles whose vanilla source is random. Campfire smoke is spawned by the client with
+	 * an 11% chance per tick, 2 to 3 at a time, so a fixed interval looks mechanical next to a real campfire.
+	 */
+	@Nullable
+	public static SpawnPattern defaultPattern(ParticleType<?> type) {
+		if (type == ParticleTypes.CAMPFIRE_COSY_SMOKE || type == ParticleTypes.CAMPFIRE_SIGNAL_SMOKE) {
+			return SpawnPattern.CAMPFIRE;
 		}
 
 		return null;

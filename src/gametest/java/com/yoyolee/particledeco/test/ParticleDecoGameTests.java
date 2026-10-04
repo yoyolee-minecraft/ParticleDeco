@@ -639,4 +639,78 @@ public class ParticleDecoGameTests {
 
 		helper.succeed();
 	}
+
+	@GameTest
+	public void campfireSmokeFollowsVanillaRhythm(GameTestHelper helper) {
+		MaterialTable table = MaterialTable.parse(MaterialTable.defaults(), w -> { });
+		com.yoyolee.particledeco.config.SpawnPattern pattern = table.find(new ItemStack(Items.CAMPFIRE)).pattern();
+		helper.assertTrue(pattern != null, "campfire smoke uses the vanilla pattern by default");
+		helper.assertTrue(table.find(new ItemStack(Items.HAY_BLOCK)).pattern() != null, "signal smoke too");
+		helper.assertTrue(table.find(new ItemStack(Items.TORCH)).pattern() == null, "flame keeps the fixed interval");
+
+		net.minecraft.util.RandomSource random = net.minecraft.util.RandomSource.create(12345L);
+		int ticks = 50_000;
+		int hits = 0;
+		long particles = 0;
+		int gap = 0;
+		int longestGap = 0;
+		int backToBack = 0;
+		boolean lastHit = false;
+
+		for (int t = 0; t < ticks; t++) {
+			int n = pattern.roll(random);
+
+			if (n > 0) {
+				helper.assertTrue(n == 2 || n == 3, "2 or 3 particles per hit, got " + n);
+				hits++;
+				particles += n;
+				longestGap = Math.max(longestGap, gap);
+				gap = 0;
+
+				if (lastHit) backToBack++;
+			} else {
+				gap++;
+			}
+
+			lastHit = n > 0;
+		}
+
+		double hitRate = hits / (double) ticks;
+		double perTick = particles / (double) ticks;
+		helper.assertTrue(Math.abs(hitRate - 0.11) < 0.01, "hit rate " + hitRate + " should be about 0.11");
+		helper.assertTrue(Math.abs(perTick - 0.275) < 0.02, "particles per tick " + perTick + " should be about 0.275");
+		helper.assertTrue(longestGap >= 40, "random gaps should sometimes exceed 2 seconds, longest " + longestGap);
+		helper.assertTrue(backToBack > 0, "hits should sometimes land on consecutive ticks");
+
+		Vec3 origin = new Vec3(10.5, 64.0, 10.5);
+
+		for (int i = 0; i < 5_000; i++) {
+			Vec3 at = pattern.sample(origin, random);
+			helper.assertTrue(Math.abs(at.x - origin.x) <= 1.0 / 3.0 + 1e-9 && Math.abs(at.z - origin.z) <= 1.0 / 3.0 + 1e-9, "horizontal within 1/3 block");
+			helper.assertTrue(at.y >= origin.y && at.y <= origin.y + 2.0, "vertical within 0 to 2 blocks");
+		}
+
+		var packets = ParticleDeco.scheduler().buildPatternPackets(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE,
+				origin, pattern, 3, table.find(new ItemStack(Items.CAMPFIRE)).motion());
+		helper.assertValueEqual(packets.size(), 3, "one packet per particle");
+
+		for (var packet : packets) {
+			helper.assertValueEqual(packet.getCount(), 0, "count 0 keeps the upward velocity");
+		}
+
+		List<String> warnings = new ArrayList<>();
+		JsonObject custom = JsonParser.parseString("""
+				{"materials": [
+				 {"items": ["minecraft:campfire"], "particle": "minecraft:campfire_cosy_smoke", "pattern": false},
+				 {"items": ["minecraft:torch"], "particle": "minecraft:flame", "pattern": {"chance": 0.5, "min": 1, "max": 1}},
+				 {"items": ["minecraft:hay_block"], "particle": "minecraft:campfire_signal_smoke", "pattern": {"chance": 7}}
+				]}
+				""").getAsJsonObject();
+		MaterialTable customTable = MaterialTable.parse(custom, warnings::add);
+		helper.assertTrue(customTable.find(new ItemStack(Items.CAMPFIRE)).pattern() == null, "pattern false disables the default");
+		helper.assertValueEqual(customTable.find(new ItemStack(Items.TORCH)).pattern().chance(), 0.5f, "custom chance");
+		helper.assertValueEqual(customTable.find(new ItemStack(Items.HAY_BLOCK)).pattern().chance(), 0.11f, "invalid chance falls back");
+		helper.assertTrue(warnings.size() == 1, "one warning for the invalid chance, got " + warnings);
+		helper.succeed();
+	}
 }

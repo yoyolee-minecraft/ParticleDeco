@@ -49,6 +49,7 @@ public final class Messages {
 		put("gui.spread", "擴散：%s 格", "Spread: %s blocks");
 		put("gui.redstone", "紅石模式：%s", "Redstone mode: %s");
 		put("gui.dye", "染料顏色：%s", "Dye color: %s");
+		put("gui.pattern", "隨機節奏（照原版）：間隔、數量與形狀不套用", "Random vanilla rhythm: interval, count and shape are not used");
 		put("gui.dye.none", "預設", "default");
 		put("gui.offset", "%s 軸偏移：%s / 16 格", "%s offset: %s / 16 block");
 		put("gui.reset_offset", "重設偏移", "Reset offset");
