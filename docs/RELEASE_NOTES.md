@@ -1,7 +1,9 @@
-Particle Deco 1.0.1
+Particle Deco 1.0.2
 
-修正：放寬 Fabric Loader 需求。1.0.0 要求 Fabric Loader 0.19.5 以上，在 0.19.3 等較舊的 Loader 上無法啟動。現在改為 0.18.4 以上（與 Fabric API 26.2 的需求一致），並在 Fabric Loader 0.19.3 上建置與執行全部 GameTest。功能與 1.0.0 相同。
+修正與改進：
 
-需求：Minecraft 26.2 以上、Fabric Loader 0.18.4 以上、Fabric API、Java 25。只需安裝在伺服器（或單人遊戲），原版客戶端可直接加入。sgui 已內嵌。
+- 營火炊煙（campfire_cosy_smoke）與狼煙（campfire_signal_smoke）現在會像原版營火一樣往上飄。原因是原版營火生成煙時帶有 0.07 的上升速度，之前的封包沒有給速度，煙就停在原地。materials.json 新增選填欄位 `motion`，這兩種煙沒寫時自動使用原版速度，舊的設定檔不必修改。
+- 花、草、竹子等有隨機模型偏移的植物，框線與粒子起點現在會跟著偏移，不再和方塊錯開。
+- 新增設定 `outline.alwaysShowWaiting`（預設 true）。設為 false 時，等待填入的黃色框線也只在手持核心或刷子時顯示。
 
-功能說明請見 README。
+需求：Minecraft 26.2 以上、Fabric Loader 0.18.4 以上、Fabric API、Java 25。

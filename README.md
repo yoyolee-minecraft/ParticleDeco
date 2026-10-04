@@ -48,7 +48,7 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
   "brushDurabilityCost": 0,
   "consumeMaterial": true,
   "bindBlacklist": ["minecraft:suspicious_sand", "minecraft:suspicious_gravel"],
-  "outline": { "waitingColor": "#FFD54A", "playingColor": "#4AD9FF", "showDistance": 16 },
+  "outline": { "waitingColor": "#FFD54A", "playingColor": "#4AD9FF", "showDistance": 16, "alwaysShowWaiting": true },
   "viewDistance": 32,
   "limits": { "perChunk": 32, "maxCountPerEmit": 8, "globalPacketsPerTick": 400, "perPlayerPacketsPerTick": 60 },
   "language": "zh_tw"
@@ -56,6 +56,7 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
 ```
 
 - `recipeMode`: 設為 `true` 時停用鐵砧轉換，改用合成配方（紫水晶碎片 + 螢石粉 + 紅石粉，無序合成）。配方以資料包條件載入，修改後需要執行原版 `/reload`。
+- `outline.alwaysShowWaiting`: 預設 `true`，等待填入的方塊一律顯示黃色框線（規格書的設計，方便找到還沒填材料的方塊）。設為 `false` 時，黃色框線也只在手持核心或刷子時顯示。
 - `language`: `zh_tw` 或 `en_us`。所有訊息由伺服器直接送出文字，客戶端不需要語言檔。
 
 `materials.json` 是材料對照表，每筆可以用 `items` 列出物品 ID 或 `#標籤`，`particle` 指定原版粒子。需要參數的粒子（例如 `geyser_base`）可加上 `options`，內容與原版粒子指令的參數相同：
@@ -64,6 +65,8 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
 { "items": ["minecraft:magma_block"], "particle": "minecraft:geyser_base", "rarity": "medium",
   "options": { "water_blocks": 3, "burst_impulse_base": 0.5 } }
 ```
+
+`motion` 可以指定粒子的固定速度（每 tick 的格數，x y z），例如 `"motion": [0, 0.07, 0]` 會讓粒子像營火煙一樣往上飄。營火炊煙與狼煙在沒有寫 `motion` 時自動使用原版營火的 0.07 上升速度；寫 `[0, 0, 0]` 可以關掉。有速度的粒子每顆需要一個封包，會多用一些封包預算。
 
 ## 與規格書不同或需要說明的地方
 
