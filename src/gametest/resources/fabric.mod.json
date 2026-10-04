@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"id": "particledeco-gametest",
+	"version": "1.0.0",
+	"name": "Particle Deco GameTests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-gametest": [
+			"com.yoyolee.particledeco.test.ParticleDecoGameTests"
+		]
+	},
+	"depends": {
+		"particledeco": "*"
+	}
+}

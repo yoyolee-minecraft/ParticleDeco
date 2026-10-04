@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "particledeco",
+	"version": "${version}",
+	"name": "Particle Deco",
+	"description": "Server-side decorative particle emitters bound to blocks. Vanilla clients can join without installing anything.",
+	"authors": [
+		"yoyolee"
+	],
+	"contact": {
+		"sources": "https://github.com/yoyolee-minecraft/ParticleDeco"
+	},
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.yoyolee.particledeco.ParticleDeco"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": ">=26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

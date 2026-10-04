@@ -1,0 +1,45 @@
+# Dev helper: print javap signatures of Minecraft classes from the Loom-provided jar.
+# Used because the development sandbox cannot reach Mojang/Fabric hosts directly.
+name: api-probe
+on:
+  workflow_dispatch:
+    inputs:
+      classes:
+        description: "Space separated class names for javap -p"
+        required: false
+        default: ""
+      list:
+        description: "Regex for listing class names inside the jar"
+        required: false
+        default: ""
+      constants:
+        description: "Space separated class names for javap -p -constants -c (full bytecode)"
+        required: false
+        default: ""
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: setup loom
+        run: chmod +x ./gradlew && ./gradlew --no-daemon help -q
+      - name: probe
+        env:
+          CLASSES: ${{ inputs.classes }}
+          LIST: ${{ inputs.list }}
+          CONSTANTS: ${{ inputs.constants }}
+        run: |
+          JARS=$(find ~/.gradle .gradle -name 'minecraft-*.jar' -not -name '*sources*' 2>/dev/null | sort)
+          echo "$JARS"
+          CP=$(echo "$JARS" | tr '\n' ':')
+          MC=$(ls -S $JARS | head -1)
+          echo "Using $MC"
+          if [ -n "$LIST" ]; then echo "##### LIST"; unzip -Z1 "$MC" | grep -E "$LIST" | sed 's/\.class$//' ; fi
+          for c in $CLASSES; do echo "##### $c"; javap -p -cp "$CP" "$c" 2>&1; done
+          for c in $CONSTANTS; do echo "##### BYTECODE $c"; javap -p -c -constants -cp "$CP" "$c" 2>&1; done
+          echo "##### END"
