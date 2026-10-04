@@ -6,7 +6,7 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
 
 ## 安裝
 
-- Minecraft 26.2 以上、Fabric Loader 0.19.5 以上、Fabric API、Java 25
+- Minecraft 26.2 以上、Fabric Loader 0.18.4 以上、Fabric API、Java 25
 - 把 `particledeco-<版本>.jar` 放進伺服器的 `mods/`。伺服端 GUI 函式庫 sgui 已內嵌在 jar 裡，不需要另外安裝。
 
 ## 玩法

@@ -21,7 +21,7 @@
 		"particledeco.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.19.5",
+		"fabricloader": ">=0.18.4",
 		"minecraft": ">=26.2",
 		"java": ">=25",
 		"fabric-api": "*"
