@@ -261,7 +261,8 @@ public class ParticleDecoGameTests {
 		helper.setBlock(pos, Blocks.OAK_PLANKS);
 		use(helper, player, pos, CoreItem.create(1));
 		use(helper, player, pos, new ItemStack(Items.TORCH));
-		for (Block kept : new Block[] {Blocks.FLOWER_POT, Blocks.CAULDRON, Blocks.WATER_CAULDRON, Blocks.STRIPPED_OAK_LOG, Blocks.EXPOSED_COPPER,
+		for (Block kept : new Block[] {Blocks.FLOWER_POT, Blocks.CAULDRON, Blocks.WATER_CAULDRON, Blocks.STRIPPED_OAK_LOG,
+				net.minecraft.core.registries.BuiltInRegistries.BLOCK.getValue(net.minecraft.resources.Identifier.withDefaultNamespace("exposed_copper")),
 				Blocks.CHIPPED_ANVIL, Blocks.DEAD_BRAIN_CORAL_BLOCK, Blocks.DIRT_PATH, Blocks.DIRT, Blocks.CARVED_PUMPKIN, Blocks.WET_SPONGE, Blocks.CAKE}) {
 			helper.assertFalse(BlockValidator.isDestroyed(kept.defaultBlockState()), kept + " is a changed block, not a destroyed one");
 		}
