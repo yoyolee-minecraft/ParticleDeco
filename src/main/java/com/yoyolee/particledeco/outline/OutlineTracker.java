@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.jspecify.annotations.Nullable;
@@ -37,9 +35,8 @@ import com.yoyolee.particledeco.interaction.CoreItem;
 
 /**
  * Keeps, per player, the set of fake outline entities that player currently sees.
- * Waiting emitters are outlined for outline.waitingShowSeconds after they start waiting; after that, and for playing
- * emitters, only while the player holds a core or a brush. Nothing here is persisted, so after a restart waiting
- * emitters only show with a tool.
+ * Playing emitters are outlined only while the player holds a core or a brush. Waiting emitters stay outlined for
+ * outline.waitingShowSeconds after the player puts the tool away. Nothing here is persisted.
  */
 public final class OutlineTracker {
 	private static final int REFRESH_INTERVAL = 10;
@@ -47,13 +44,12 @@ public final class OutlineTracker {
 	private static final class View {
 		ResourceKey<Level> level;
 		boolean holdingTool;
+		/** Last server tick this player held a tool; far in the past until they do. */
+		long lastToolTick = Long.MIN_VALUE / 2;
 		final Long2ObjectMap<FakeDisplayEntity> shown = new Long2ObjectOpenHashMap<>();
 	}
 
 	private final Map<UUID, View> views = new HashMap<>();
-	/** Server tick at which each emitter started waiting, per dimension. */
-	private final Map<ResourceKey<Level>, Long2LongMap> waitingSince = new HashMap<>();
-	private long now;
 
 	/**
 	 * Observes every outline packet sent to a player. Used by the GameTests to replay the client's view.
@@ -86,10 +82,6 @@ public final class OutlineTracker {
 
 	public void tick(MinecraftServer server) {
 		long tick = server.getTickCount();
-		now = tick;
-
-		if (tick % 200 == 0) pruneWaiting();
-
 		Set<UUID> online = new HashSet<>();
 
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -99,6 +91,8 @@ public final class OutlineTracker {
 			boolean holding = isHoldingTool(player);
 			boolean force = holding != view.holdingTool;
 			view.holdingTool = holding;
+
+			if (holding) view.lastToolTick = tick;
 			ResourceKey<Level> dimension = player.level().dimension();
 
 			if (view.level != dimension) {
@@ -131,51 +125,24 @@ public final class OutlineTracker {
 
 	public void clear() {
 		views.clear();
-		waitingSince.clear();
-	}
-
-	public void markWaiting(ServerLevel level, BlockPos pos) {
-		markWaitingAt(level, pos, level.getServer().getTickCount());
-	}
-
-	public void markWaitingAt(ServerLevel level, BlockPos pos, long tick) {
-		waitingSince.computeIfAbsent(level.dimension(), k -> new Long2LongOpenHashMap()).put(pos.asLong(), tick);
-	}
-
-	public void forgetWaiting(ServerLevel level, BlockPos pos) {
-		Long2LongMap map = waitingSince.get(level.dimension());
-
-		if (map != null) map.remove(pos.asLong());
 	}
 
 	/**
-	 * Whether a waiting emitter is still inside its "show without a tool" window.
+	 * Test hook: pretend the player last held a tool at the given server tick.
 	 */
-	public boolean waitingVisible(ServerLevel level, BlockPos pos) {
-		int seconds = ParticleDeco.config().outlineWaitingShowSeconds;
+	public void setLastToolTick(ServerPlayer player, long tick) {
+		views.computeIfAbsent(player.getUUID(), k -> new View()).lastToolTick = tick;
+	}
 
-		if (seconds == 0) return false;
+	/**
+	 * Whether waiting emitters are still outlined for this player without a tool in hand.
+	 */
+	private static boolean waitingVisible(ServerPlayer player, View view) {
+		int seconds = ParticleDeco.config().outlineWaitingShowSeconds;
 
 		if (seconds < 0) return true;
 
-		Long2LongMap map = waitingSince.get(level.dimension());
-
-		if (map == null || !map.containsKey(pos.asLong())) return false;
-
-		return level.getServer().getTickCount() - map.get(pos.asLong()) < seconds * 20L;
-	}
-
-	private void pruneWaiting() {
-		int seconds = ParticleDeco.config().outlineWaitingShowSeconds;
-
-		if (seconds < 0) return;
-
-		long cutoff = now - seconds * 20L;
-		for (Long2LongMap map : waitingSince.values()) {
-			map.long2LongEntrySet().removeIf(entry -> entry.getLongValue() <= cutoff);
-		}
-
-		waitingSince.values().removeIf(Long2LongMap::isEmpty);
+		return player.level().getServer().getTickCount() - view.lastToolTick < seconds * 20L;
 	}
 
 	public int shownCount(ServerPlayer player) {
@@ -191,6 +158,9 @@ public final class OutlineTracker {
 	public void refreshNow(ServerPlayer player) {
 		View view = views.computeIfAbsent(player.getUUID(), k -> new View());
 		view.holdingTool = isHoldingTool(player);
+
+		if (view.holdingTool) view.lastToolTick = player.level().getServer().getTickCount();
+
 		view.level = player.level().dimension();
 		refresh(player, view);
 	}
@@ -200,9 +170,10 @@ public final class OutlineTracker {
 		ServerLevel level = player.level();
 		List<Emitter> nearby = ParticleDeco.manager().near(level, player.blockPosition(), config.outlineShowDistance);
 		Long2ObjectMap<Emitter> desired = new Long2ObjectOpenHashMap<>();
+		boolean showWaiting = view.holdingTool || waitingVisible(player, view);
 
 		for (Emitter emitter : nearby) {
-			if (view.holdingTool || (emitter.isWaiting() && waitingVisible(level, emitter.pos()))) {
+			if (view.holdingTool || (emitter.isWaiting() && showWaiting)) {
 				desired.put(emitter.pos().asLong(), emitter);
 			}
 		}

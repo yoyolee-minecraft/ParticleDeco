@@ -23,7 +23,7 @@ public final class ModConfig {
 	public int outlineWaitingColor = 0xFFD54A;
 	public int outlinePlayingColor = 0x4AD9FF;
 	public int outlineShowDistance = 16;
-	/** Seconds a waiting emitter stays outlined without a tool after it starts waiting; -1 forever, 0 never. */
+	/** Seconds waiting emitters stay outlined after the player puts the core or brush away; -1 forever, 0 not at all. */
 	public int outlineWaitingShowSeconds = 60;
 	public int viewDistance = 32;
 	public int perChunk = 32;

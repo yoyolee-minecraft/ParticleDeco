@@ -75,14 +75,6 @@ public final class EmitterManager {
 	public void put(ServerLevel level, Emitter emitter) {
 		LevelChunk chunk = level.getChunkAt(emitter.pos());
 		ChunkEmitters current = chunk.getAttachedOrElse(EMITTERS, ChunkEmitters.EMPTY);
-		Emitter previous = current.get(emitter.pos());
-
-		if (!emitter.isWaiting()) {
-			ParticleDeco.outlines().forgetWaiting(level, emitter.pos());
-		} else if (previous == null || !previous.isWaiting()) {
-			ParticleDeco.outlines().markWaiting(level, emitter.pos());
-		}
-
 		chunk.setAttached(EMITTERS, current.with(emitter));
 		chunk.markUnsaved();
 		active.computeIfAbsent(level.dimension(), k -> new Long2ObjectOpenHashMap<>()).put(chunk.getPos().pack(), chunk);
@@ -98,8 +90,6 @@ public final class EmitterManager {
 		Emitter removed = current.get(pos);
 
 		if (removed == null) return null;
-
-		ParticleDeco.outlines().forgetWaiting(level, pos);
 
 		ChunkEmitters updated = current.without(pos);
 

@@ -394,37 +394,45 @@ public class ParticleDecoGameTests {
 	}
 
 	@GameTest
-	public void waitingOutlineExpires(GameTestHelper helper) {
+	public void waitingOutlineLingersAfterToolIsPutAway(GameTestHelper helper) {
 		ServerPlayer player = survivalPlayer(helper);
 		Vec3 standAt = helper.absoluteVec(new Vec3(1.5, 1, 3.5));
 		player.teleportTo(standAt.x, standAt.y, standAt.z);
-		BlockPos waiting = new BlockPos(1, 1, 1);
+		BlockPos waiting = new BlockPos(0, 1, 1);
+		BlockPos playing = new BlockPos(2, 1, 1);
 		helper.setBlock(waiting, Blocks.OAK_PLANKS);
-		use(helper, player, waiting, CoreItem.create(1));
-		BlockPos abs = helper.absolutePos(waiting);
-
-		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-		ParticleDeco.outlines().refreshNow(player);
-		helper.assertTrue(ParticleDeco.outlines().isShown(player, abs), "fresh waiting block outlined");
-
+		helper.setBlock(playing, Blocks.OAK_PLANKS);
+		BlockPos waitingAbs = helper.absolutePos(waiting);
+		BlockPos playingAbs = helper.absolutePos(playing);
+		long now = helper.getLevel().getServer().getTickCount();
 		int seconds = ParticleDeco.config().outlineWaitingShowSeconds;
-		long expired = helper.getLevel().getServer().getTickCount() - seconds * 20L - 1;
-		ParticleDeco.outlines().markWaitingAt(helper.getLevel(), abs, expired);
-		ParticleDeco.outlines().refreshNow(player);
-		helper.assertFalse(ParticleDeco.outlines().isShown(player, abs), "waiting outline gone after " + seconds + " s");
 
+		use(helper, player, waiting, CoreItem.create(1));
+		use(helper, player, playing, CoreItem.create(1));
+		use(helper, player, playing, new ItemStack(Items.TORCH));
+
+		// The window counts from when the tool is put away, however long it was held before.
 		player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BRUSH));
 		ParticleDeco.outlines().refreshNow(player);
-		helper.assertTrue(ParticleDeco.outlines().isShown(player, abs), "expired waiting block still outlined with a tool");
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, waitingAbs), "waiting shown with brush");
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, playingAbs), "playing shown with brush");
 
-		// Brushing a playing block back to waiting starts a new window.
-		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-		use(helper, player, waiting, new ItemStack(Items.TORCH));
-		use(helper, player, waiting, new ItemStack(Items.BRUSH));
-		helper.assertTrue(emitter(helper, waiting) != null && emitter(helper, waiting).isWaiting(), "brushed back to waiting");
 		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
 		ParticleDeco.outlines().refreshNow(player);
-		helper.assertTrue(ParticleDeco.outlines().isShown(player, abs), "brushed block outlined again");
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, waitingAbs), "waiting stays right after putting the brush away");
+		helper.assertFalse(ParticleDeco.outlines().isShown(player, playingAbs), "playing hides right after putting the brush away");
+
+		ParticleDeco.outlines().setLastToolTick(player, now - seconds * 20L + 20);
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, waitingAbs), "waiting still shown one second before the window ends");
+
+		ParticleDeco.outlines().setLastToolTick(player, now - seconds * 20L - 1);
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertFalse(ParticleDeco.outlines().isShown(player, waitingAbs), "waiting gone " + seconds + " s after putting the tool away");
+
+		player.setItemInHand(InteractionHand.MAIN_HAND, CoreItem.create(1));
+		ParticleDeco.outlines().refreshNow(player);
+		helper.assertTrue(ParticleDeco.outlines().isShown(player, waitingAbs), "picking the core up again shows it");
 
 		List<String> warnings = new ArrayList<>();
 		ModConfig legacy = ModConfig.parse(JsonParser.parseString("{\"outline\": {\"alwaysShowWaiting\": false}}").getAsJsonObject(), warnings::add);
