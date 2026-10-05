@@ -1,6 +1,7 @@
 package com.yoyolee.particledeco.runtime;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,9 +29,11 @@ public final class BlockValidator {
 	}
 
 	/**
-	 * Only the block type is compared, never the block state, so doors, furnaces and crops keep their emitter.
+	 * Only destroying the block unbinds it. Changing the state or even the block type keeps the emitter: a flower pot
+	 * becomes a different block when its plant is taken out, a log when it is stripped, copper when it oxidises.
+	 * Destroyed means the position now holds air, a liquid or fire (explosions, pistons, burning, /setblock air).
 	 */
-	public static boolean stillBound(BlockState current, Block boundBlock) {
-		return current.getBlock() == boundBlock;
+	public static boolean isDestroyed(BlockState current) {
+		return current.isAir() || current.liquid() || current.getBlock() instanceof BaseFireBlock;
 	}
 }

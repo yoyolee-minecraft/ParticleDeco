@@ -254,13 +254,54 @@ public class ParticleDecoGameTests {
 	}
 
 	@GameTest(maxTicks = 60)
-	public void replacedBlockUnbinds(GameTestHelper helper) {
+	public void blockTypeChangeKeepsBinding(GameTestHelper helper) {
 		ServerPlayer player = survivalPlayer(helper);
 		BlockPos pos = new BlockPos(1, 1, 1);
 		helper.setBlock(pos, Blocks.OAK_PLANKS);
 		use(helper, player, pos, CoreItem.create(1));
+		use(helper, player, pos, new ItemStack(Items.TORCH));
+		// Only destroying the block unbinds; /setblock to another block type keeps the emitter and its material.
 		helper.setBlock(pos, Blocks.STONE);
-		helper.succeedWhen(() -> helper.assertTrue(emitter(helper, pos) == null, "different block type unbinds"));
+		helper.runAfterDelay(30, () -> {
+			Emitter e = emitter(helper, pos);
+			helper.assertTrue(e != null && !e.isWaiting(), "block type change keeps the playing emitter");
+			helper.assertItemEntityNotPresent(Items.TORCH, pos, 2.0);
+			helper.setBlock(pos, Blocks.WATER);
+		});
+		helper.runAfterDelay(50, () -> {
+			helper.assertTrue(emitter(helper, pos) == null, "replaced by water counts as destroyed");
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * Reported: taking the flower out of a bound flower pot (any item or empty hand) turned potted_poppy into
+	 * flower_pot, which unbound the emitter and dropped the material together with the flower.
+	 */
+	@GameTest(maxTicks = 60)
+	public void flowerPotKeepsBindingWhenPlantIsTakenOut(GameTestHelper helper) {
+		ServerPlayer player = survivalPlayer(helper);
+		BlockPos waiting = new BlockPos(0, 1, 1);
+		BlockPos playing = new BlockPos(2, 1, 1);
+		helper.setBlock(waiting, Blocks.POTTED_POPPY);
+		helper.setBlock(playing, Blocks.POTTED_POPPY);
+		use(helper, player, waiting, CoreItem.create(1));
+		use(helper, player, playing, CoreItem.create(1));
+		use(helper, player, playing, new ItemStack(Items.TORCH));
+		helper.assertTrue(emitter(helper, playing) != null && !emitter(helper, playing).isWaiting(), "pot playing");
+
+		use(helper, player, waiting, ItemStack.EMPTY);
+		use(helper, player, playing, new ItemStack(Items.STICK));
+		helper.assertBlockPresent(Blocks.FLOWER_POT, waiting);
+		helper.assertBlockPresent(Blocks.FLOWER_POT, playing);
+
+		helper.runAfterDelay(30, () -> {
+			helper.assertTrue(emitter(helper, waiting) != null && emitter(helper, waiting).isWaiting(), "waiting pot keeps its core");
+			Emitter e = emitter(helper, playing);
+			helper.assertTrue(e != null && !e.isWaiting() && e.material().is(Items.TORCH), "playing pot keeps its particle");
+			helper.assertItemEntityNotPresent(Items.TORCH, playing, 2.0);
+			helper.succeed();
+		});
 	}
 
 	@GameTest(maxTicks = 60)

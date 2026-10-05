@@ -18,7 +18,7 @@ import net.minecraft.world.level.block.Block;
  * One particle emitter bound to a block. Immutable; use the {@code with*} methods to derive updated copies.
  *
  * @param pos          bound block position, also the key inside the chunk
- * @param block        block type at bind time, used to detect block removal
+ * @param block        block type at bind time; informational, the block may change type later without unbinding
  * @param material     stored item, empty while waiting for a material
  * @param particle     particle id derived from the material, informational
  * @param offsetX      offset in 1/16 block, -32..32

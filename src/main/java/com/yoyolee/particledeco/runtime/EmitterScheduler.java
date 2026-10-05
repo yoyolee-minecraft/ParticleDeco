@@ -147,7 +147,7 @@ public final class EmitterScheduler {
 		BlockPos pos = emitter.pos();
 		BlockState state = level.getBlockState(pos);
 
-		if (onlyPlayer == null && !BlockValidator.stillBound(state, emitter.block())) {
+		if (onlyPlayer == null && BlockValidator.isDestroyed(state)) {
 			EmitterActions.unbindAndDropAt(level, pos);
 			return;
 		}
