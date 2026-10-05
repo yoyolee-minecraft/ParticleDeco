@@ -31,9 +31,11 @@ public final class BlockValidator {
 	/**
 	 * Only destroying the block unbinds it. Changing the state or even the block type keeps the emitter: a flower pot
 	 * becomes a different block when its plant is taken out, a log when it is stripped, copper when it oxidises.
-	 * Destroyed means the position now holds air, a liquid or fire (explosions, pistons, burning, /setblock air).
+	 * Destroyed means the position now holds air, a liquid, a bubble column or fire (explosions, pistons, burning,
+	 * a block broken under water above soul sand or magma).
 	 */
 	public static boolean isDestroyed(BlockState current) {
-		return current.isAir() || current.liquid() || current.getBlock() instanceof BaseFireBlock;
+		return current.isAir() || current.liquid() || current.getBlock() == Blocks.BUBBLE_COLUMN
+				|| current.getBlock() instanceof BaseFireBlock;
 	}
 }

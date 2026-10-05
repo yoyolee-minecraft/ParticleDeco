@@ -26,6 +26,7 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -260,6 +261,15 @@ public class ParticleDecoGameTests {
 		helper.setBlock(pos, Blocks.OAK_PLANKS);
 		use(helper, player, pos, CoreItem.create(1));
 		use(helper, player, pos, new ItemStack(Items.TORCH));
+		for (Block kept : new Block[] {Blocks.FLOWER_POT, Blocks.CAULDRON, Blocks.WATER_CAULDRON, Blocks.STRIPPED_OAK_LOG, Blocks.EXPOSED_COPPER,
+				Blocks.CHIPPED_ANVIL, Blocks.DEAD_BRAIN_CORAL_BLOCK, Blocks.DIRT_PATH, Blocks.DIRT, Blocks.CARVED_PUMPKIN, Blocks.WET_SPONGE, Blocks.CAKE}) {
+			helper.assertFalse(BlockValidator.isDestroyed(kept.defaultBlockState()), kept + " is a changed block, not a destroyed one");
+		}
+
+		for (Block gone : new Block[] {Blocks.AIR, Blocks.CAVE_AIR, Blocks.WATER, Blocks.LAVA, Blocks.BUBBLE_COLUMN, Blocks.FIRE, Blocks.SOUL_FIRE}) {
+			helper.assertTrue(BlockValidator.isDestroyed(gone.defaultBlockState()), gone + " means the block was destroyed");
+		}
+
 		// Only destroying the block unbinds; /setblock to another block type keeps the emitter and its material.
 		helper.setBlock(pos, Blocks.STONE);
 		helper.runAfterDelay(30, () -> {
@@ -579,6 +589,7 @@ public class ParticleDecoGameTests {
 	 * GameTest mock players use in-memory channels, so connection.send encodes every packet synchronously on the
 	 * server thread. On a real server send only queues the packet and the network thread encodes it, so the
 	 * assertion uses the scheduler time without the send calls. Both numbers are logged.
+	 * Shared CI runners vary a lot from run to run, so the check uses the median tick after a 100 tick warm-up.
 	 */
 	// Own environment so it runs in a separate batch: its 500 emitters would otherwise fill the per-chunk limit of
 	// neighbouring tests that happen to share a chunk, and their activity would skew the timing.
@@ -607,20 +618,21 @@ public class ParticleDecoGameTests {
 			player.teleportTo(center.x, center.y, center.z);
 		}
 
-		helper.runAfterDelay(60, () -> {
+		helper.runAfterDelay(100, () -> {
 			double total = ParticleDeco.scheduler().stats().averageMillisPerTick();
+			double median = ParticleDeco.scheduler().stats().medianLogicMillisPerTick();
 			double send = ParticleDeco.scheduler().stats().averageSendMillisPerTick();
 			double ms = ParticleDeco.scheduler().stats().averageLogicMillisPerTick();
 			double packets = ParticleDeco.scheduler().stats().averagePacketsPerTick();
-			ParticleDeco.LOGGER.info("Benchmark: 500 emitters, 5 players: {} ms/tick total, {} ms in connection.send, {} ms scheduler logic, {} packets/tick",
-					String.format("%.3f", total), String.format("%.3f", send), String.format("%.3f", ms), String.format("%.1f", packets));
+			ParticleDeco.LOGGER.info("Benchmark: 500 emitters, 5 players: {} ms/tick total, {} ms in connection.send, {} ms scheduler logic (median {}), {} packets/tick",
+					String.format("%.3f", total), String.format("%.3f", send), String.format("%.3f", ms), String.format("%.3f", median), String.format("%.1f", packets));
 
 			for (BlockPos abs : placed) {
 				ParticleDeco.manager().remove(level, abs);
 			}
 
 			helper.assertTrue(packets > 0, "particles were sent");
-			helper.assertTrue(ms < 1.0, "scheduler took " + ms + " ms per tick");
+			helper.assertTrue(median < 1.0, "scheduler took " + median + " ms on a median tick (mean " + ms + ")");
 			helper.succeed();
 		});
 	}

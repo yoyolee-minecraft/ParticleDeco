@@ -67,6 +67,19 @@ public final class EmitterStats {
 		return averageMillisPerTick() - averageSendMillisPerTick();
 	}
 
+	/**
+	 * Median of the per-tick scheduler time without send calls. One GC pause or a busy CI machine moves the mean of a
+	 * 20 tick window a lot; the median shows what a typical tick costs.
+	 */
+	public double medianLogicMillisPerTick() {
+		long[] logic = new long[WINDOW];
+
+		for (int i = 0; i < WINDOW; i++) logic[i] = nanos[i] - sendNanos[i];
+
+		java.util.Arrays.sort(logic);
+		return (logic[WINDOW / 2 - 1] + logic[WINDOW / 2]) / 2.0 / 1_000_000.0;
+	}
+
 	public int lastTickPackets() {
 		return lastTickPackets;
 	}
