@@ -128,6 +128,13 @@ public final class OutlineTracker {
 	}
 
 	/**
+	 * Binding or brushing counts as holding a tool even when it used up the last core or broke the brush.
+	 */
+	public void markToolUsed(ServerPlayer player) {
+		setLastToolTick(player, player.level().getServer().getTickCount());
+	}
+
+	/**
 	 * Test hook: pretend the player last held a tool at the given server tick.
 	 */
 	public void setLastToolTick(ServerPlayer player, long tick) {

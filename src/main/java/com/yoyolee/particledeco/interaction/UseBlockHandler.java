@@ -89,6 +89,7 @@ public final class UseBlockHandler {
 		}
 
 		player.sendOverlayMessage(Messages.info("bind.success"));
+		ParticleDeco.outlines().markToolUsed(player);
 		ParticleDeco.outlines().refreshNow(player);
 		resync(player);
 		return InteractionResult.SUCCESS;
@@ -113,6 +114,7 @@ public final class UseBlockHandler {
 		}
 
 		player.sendOverlayMessage(Messages.info("brush.success"));
+		ParticleDeco.outlines().markToolUsed(player);
 		ParticleDeco.outlines().refreshNow(player);
 		resync(player);
 		return InteractionResult.SUCCESS;
