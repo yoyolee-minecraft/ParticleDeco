@@ -59,7 +59,7 @@ Minecraft Java 26.2 的 Fabric 伺服端模組。玩家在生存模式用原版�
 - `outline.waitingShowSeconds`：預設 `60`。手持粒子核心或刷子時，等待填入（黃色）與播放中（青色）的框線都會顯示。把工具收起來後，青色框線立刻消失，黃色框線再保留這段秒數才消失；每位玩家各自計時。設為 `0` 代表收起工具就一起消失，`-1` 代表黃色框線永遠顯示（所有玩家都看得到）。舊設定檔的 `alwaysShowWaiting: false` 會當成 `0`。
 - `language`: `zh_tw` 或 `en_us`。所有訊息由伺服器直接送出文字，客戶端不需要語言檔。
 
-`materials.json` 是材料對照表，每筆可以用 `items` 列出物品 ID 或 `#標籤`，`particle` 指定原版粒子。需要參數的粒子（例如 `geyser_base`）可加上 `options`，內容與原版粒子指令的參數相同：
+`materials.json` 是材料對照表，預設內容見 [docs/MATERIALS.md](docs/MATERIALS.md)。每筆可以用 `items` 列出物品 ID 或 `#標籤`，`particle` 指定原版粒子。需要參數的粒子（例如 `geyser_base`）可加上 `options`，內容與原版粒子指令的參數相同：
 
 ```json
 { "items": ["minecraft:magma_block"], "particle": "minecraft:geyser_base", "rarity": "medium",

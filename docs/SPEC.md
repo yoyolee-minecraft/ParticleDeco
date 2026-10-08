@@ -166,65 +166,9 @@ Oct 4, 2026 · @yoyolee
 
 選材原則：材料可再生、與粒子在原版中的來源有關；越特別的粒子用越難取得的材料。粒子清單依據 [中文 Minecraft Wiki：Java版粒子](https://zh.minecraft.wiki/w/Java%E7%89%88%E7%B2%92%E5%AD%90)。
 
-| 稀有度 | 材料 | 粒子 | 關聯與備註 |
-|----|----|----|----|
-| 常見 | 火把 | flame | 火把的火焰 |
-| 常見 | 蠟燭 | small_flame | 點燃蠟燭的小火苗 |
-| 常見 | 銅火把 | copper_fire_flame | 銅火把的綠色火焰 |
-| 常見 | 營火 | campfire_cosy_smoke | 營火炊煙 |
-| 常見 | 乾草捆 | campfire_signal_smoke | 營火放在乾草捆上的高聳狼煙 |
-| 常見 | 木炭 | smoke | 小黑煙 |
-| 常見 | 煤炭 | large_smoke | 大黑煙 |
-| 常見 | 水桶 | dripping_water | 滴水，整桶存入，刷除時原樣掉落 |
-| 常見 | 鐘乳石 | dripping_dripstone_water | 鐘乳石滴水 |
-| 常見 | 蜂蜜瓶 | dripping_honey | 蜂巢滴蜜 |
-| 常見 | 骨粉 | happy_villager | 施骨粉時的綠色星點 |
-| 常見 | 小麥 | heart | 餵食繁殖的愛心 |
-| 常見 | 音符盒 | note | 音符 |
-| 常見 | 書架 | enchant | 書架流向附魔台的符文 |
-| 常見 | 任一小型花 | falling_nectar | 蜜蜂掉落的花粉 |
-| 常見 | 雪球 | item_snowball | 雪球碎屑 |
-| 常見 | 墨囊 | squid_ink | 墨汁 |
-| 常見 | 紅石粉 | dust | 紅石粒子，第二格放染料改顏色 |
-| 常見 | 任一混凝土粉末 | falling_dust | 懸空沙土的落塵，顏色取自該粉末 |
-| 常見 | 蜂巢 | wax_on | 上蠟時的光點 |
-| 常見 | 煙火 | firework | 煙火火花尾跡 |
-| 中等 | 靈魂火把 | soul_fire_flame | 藍色靈魂火焰 |
-| 中等 | 熔岩桶 | dripping_lava | 滴熔岩，整桶存入，刷除時原樣掉落 |
-| 中等 | 岩漿球 | lava | 熔岩迸出的火星 |
-| 中等 | 櫻花樹葉 | cherry_leaves | 櫻花花瓣飄落 |
-| 中等 | 蒼白橡木樹葉 | pale_oak_leaves | 蒼白落葉 |
-| 中等 | 緋紅蕈菇 | crimson_spore | 緋紅森林的孢子 |
-| 中等 | 扭曲蕈菇 | warped_spore | 扭曲森林的孢子 |
-| 中等 | 靈魂沙 | ash | 靈魂沙谷的灰燼 |
-| 中等 | 玄武岩 | white_ash | 玄武岩三角洲的白灰 |
-| 中等 | 菌絲土 | mycelium | 菌絲土的孢子 |
-| 中等 | 粉雪桶 | snowflake | 雪花，整桶存入，刷除時原樣掉落 |
-| 中等 | 螢光墨囊 | glow | 螢光烏賊的光點 |
-| 中等 | 孢子花 | spore_blossom_air | 漂浮孢子，可向流浪商人購買 |
-| 中等 | 螢火蟲灌木叢 | firefly | 螢火蟲，可用骨粉繁殖灌木叢 |
-| 中等 | 避雷針 | electric_spark | 雷擊銅時的電火花 |
-| 中等 | 終界珍珠 | portal | 傳送門的紫色粒子 |
-| 中等 | 哭泣的黑曜石 | dripping_obsidian_tear | 紫色淚滴，可向豬布林以物易物 |
-| 中等 | 任一藥水 | entity_effect | 狀態效果漩渦，顏色取自藥水 |
-| 中等 | 風彈 | small_gust | 小型旋風 |
-| 中等 | 鸚鵡螺殼 | nautilus | 海靈核心的漩渦粒子 |
-| 中等 | 伏聆振測器 | dust_color_transition | 振測器啟動時的變色粒子，伏聆觸媒擴散可再生 |
-| 中等 | TNT | explosion | 爆炸煙團，建議間隔 40 tick 以上 |
-| 中等 | 岩漿塊 | geyser_base | 間歇泉底部持續冒出的蒸氣；原版間歇泉需要烈性硫磺下方墊岩漿塊 |
-| 中等 | 硫磺尖錐 | geyser_poof | 間歇泉底部快速爆發的蒸氣；尖錐會自然生長，可再生 |
-| 中等 | 硫磺 | noxious_gas | 硫磺池水面的黃色煙霧；可用硫磺尖錐合成，尖錐會自然生長，可再生 |
-| 稀有 | 終界燭 | end_rod | 白色光點，材料需前往終界 |
-| 稀有 | 重生錨 | reverse_portal | 重生錨的反向傳送門粒子 |
-| 稀有 | 試煉鑰匙 | vault_connection | 接近寶庫時的連線光點 |
-| 稀有 | 不祥試煉鑰匙 | trial_spawner_detection_ominous | 不祥試煉生怪磚的藍色火花 |
-| 稀有 | 不祥之瓶 | ominous_spawning | 不祥物品生成時的粒子 |
-| 稀有 | 伏聆觸媒 | sculk_soul | 生物死亡時觸媒吸收的靈魂，伏守者掉落 |
-| 稀有 | 龍息 | dragon_breath | 紫色龍息，重生終界龍可再取得 |
-| 稀有 | 不死圖騰 | totem_of_undying | 圖騰發動時的光點，喚魔者掉落 |
-| 稀有 | 烈性硫磺 | geyser_plume | 間歇泉噴發的上升蒸氣柱，搭配 column 形狀；需 9 個硫磺合成 |
+完整的預設材料對照表（含物品 ID、稀有度與說明，材料名稱使用遊戲內台灣繁體中文的正式名稱）見 [docs/MATERIALS.md](MATERIALS.md)，內容與 `MaterialTable.defaults()` 一致。
 
-**帶選項的粒子**：dust 的顏色由第二格染料決定，預設紅色；falling_dust 的方塊取自放入的混凝土粉末；entity_effect 的顏色取自藥水內容；dust_color_transition 預設使用伏聆振測器的配色。
+**帶選項的粒子**：dust 的顏色由設定介面的染料決定，預設紅色；falling_dust 的方塊取自放入的混凝土粉末；entity_effect 的顏色取自藥水內容；dust_color_transition 預設使用伏聆振測器的配色。
 
 **刻意不收錄**：只在水中存在的粒子（bubble、bubble_column_up、current_down）離開水會立即消失；會遮擋畫面或干擾玩家的粒子（elder_guardian、sonic_boom、flash、explosion_emitter）。
 
