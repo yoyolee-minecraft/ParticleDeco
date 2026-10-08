@@ -16,6 +16,14 @@ on:
         description: "Space separated class names for javap -p -constants -c (full bytecode)"
         required: false
         default: ""
+      lang:
+        description: "Space separated item ids; prints their official zh_tw names"
+        required: false
+        default: ""
+      version:
+        description: "Minecraft version for the lang lookup"
+        required: false
+        default: "26.2"
 
 jobs:
   probe:
@@ -26,9 +34,32 @@ jobs:
         with:
           java-version: '25'
           distribution: 'microsoft'
+      - name: zh_tw names
+        if: ${{ inputs.lang != '' }}
+        env:
+          LANG_IDS: ${{ inputs.lang }}
+          MC_VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          get = lambda u: json.load(urllib.request.urlopen(u))
+          manifest = get("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
+          version = next(v for v in manifest["versions"] if v["id"] == os.environ["MC_VERSION"])
+          index = get(get(version["url"])["assetIndex"]["url"])
+          h = index["objects"]["minecraft/lang/zh_tw.json"]["hash"]
+          lang = get(f"https://resources.download.minecraft.net/{h[:2]}/{h}")
+          print("##### LANG")
+          for raw in os.environ["LANG_IDS"].split():
+              ns, _, path = raw.partition(":") if ":" in raw else ("minecraft", "", raw)
+              name = lang.get(f"item.{ns}.{path}") or lang.get(f"block.{ns}.{path}") or lang.get(raw) or "?"
+              print(f"{raw}\t{name}")
+          print("##### END LANG")
+          PY
       - name: setup loom
+        if: ${{ inputs.lang == '' }}
         run: chmod +x ./gradlew && ./gradlew --no-daemon help -q
       - name: probe
+        if: ${{ inputs.lang == '' }}
         env:
           CLASSES: ${{ inputs.classes }}
           LIST: ${{ inputs.list }}
